@@ -5,8 +5,10 @@ import { useSearchParams }     from 'next/navigation'
 import { Suspense }            from 'react'
 import { CoachChat }           from '../../../../components/chat/CoachChat'
 import { getBrowserClient }    from '../../../../lib/supabase'
+import { useUser }             from '../../../../lib/user-context'
 
 function CoachPageInner() {
+  const { userId }   = useUser()
   const searchParams = useSearchParams()
   const urlChildId   = searchParams.get('childId') ?? undefined
 
@@ -16,13 +18,11 @@ function CoachPageInner() {
   useEffect(() => {
     async function load() {
       const sb = getBrowserClient()
-      const { data: { user } } = await sb.auth.getUser()
-      if (!user) return
 
       const { data } = await sb
         .from('children')
         .select('id, full_name, grade')
-        .eq('parent_id', user.id)
+        .eq('parent_id', userId)
         .order('created_at')
 
       const kids = (data ?? []) as { id: string; full_name: string; grade: number }[]
@@ -30,7 +30,7 @@ function CoachPageInner() {
       if (!activeId && kids.length > 0) setActiveId(kids[0]!.id)
     }
     load()
-  }, [activeId])
+  }, [userId, activeId])
 
   const activeChild = children.find((c) => c.id === activeId)
 

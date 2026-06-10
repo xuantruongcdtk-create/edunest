@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter }                         from 'next/navigation'
 import Link                                  from 'next/link'
 import { getBrowserClient }                  from '../../../../lib/supabase'
+import { useUser }                           from '../../../../lib/user-context'
 
 interface Quiz {
   id:                 string
@@ -194,7 +195,8 @@ function GenerateModal({ onClose, onCreated }: { onClose: () => void; onCreated:
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function TeacherQuizPage() {
-  const router = useRouter()
+  const router     = useRouter()
+  const { userId } = useUser()
 
   const [quizzes,     setQuizzes]     = useState<Quiz[]>([])
   const [loading,     setLoading]     = useState(true)
@@ -205,18 +207,16 @@ export default function TeacherQuizPage() {
   const loadQuizzes = useCallback(async () => {
     setLoading(true)
     const sb = getBrowserClient()
-    const { data: { user } } = await sb.auth.getUser()
-    if (!user) { router.push('/login'); return }
 
     const { data } = await sb
       .from('quizzes')
       .select('id, title, subject, grade, difficulty, status, question_count, time_limit_minutes, ai_generated, due_date, created_at')
-      .eq('teacher_id', user.id)
+      .eq('teacher_id', userId)
       .order('created_at', { ascending: false })
 
     setQuizzes((data ?? []) as Quiz[])
     setLoading(false)
-  }, [router])
+  }, [userId])
 
   useEffect(() => { loadQuizzes() }, [loadQuizzes])
 

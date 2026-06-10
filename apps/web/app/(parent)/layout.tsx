@@ -19,7 +19,7 @@ export default async function ParentLayout({ children }: { children: React.React
   if (p?.role === 'admin')   redirect('/admin/dashboard')
 
   return (
-    <DashboardLayout role="parent" userName={p?.full_name ?? 'Phụ huynh'}>
+    <DashboardLayout role="parent" userName={p?.full_name ?? 'Phụ huynh'} userId={user.id}>
       {children}
     </DashboardLayout>
   )

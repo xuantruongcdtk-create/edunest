@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter }           from 'next/navigation'
 import { getBrowserClient }    from '../../lib/supabase'
+import { useUser }             from '../../lib/user-context'
 
 const PLAN_LABELS: Record<string, { label: string; color: string }> = {
   free:   { label: 'Miễn phí',  color: 'bg-gray-100 text-gray-600' },
@@ -12,7 +13,8 @@ const PLAN_LABELS: Record<string, { label: string; color: string }> = {
 }
 
 export default function SettingsPage() {
-  const router = useRouter()
+  const router     = useRouter()
+  const { userId } = useUser()
 
   const [profile,   setProfile]   = useState<{ full_name: string; email: string; phone: string; role: string; plan_tier: string } | null>(null)
   const [fullName,  setFullName]  = useState('')
@@ -25,35 +27,31 @@ export default function SettingsPage() {
   useEffect(() => {
     async function load() {
       const sb = getBrowserClient()
-      const { data: { user } } = await sb.auth.getUser()
-      if (!user) { router.push('/login'); return }
 
       const { data } = await sb
         .from('profiles')
-        .select('full_name, role, plan_tier, phone')
-        .eq('id', user.id)
+        .select('full_name, role, plan_tier, phone, email')
+        .eq('id', userId)
         .single()
 
-      const p = data as { full_name: string; role: string; plan_tier: string; phone: string | null } | null
-      setProfile({ full_name: p?.full_name ?? '', email: user.email ?? '', phone: p?.phone ?? '', role: p?.role ?? 'parent', plan_tier: p?.plan_tier ?? 'free' })
+      const p = data as { full_name: string; role: string; plan_tier: string; phone: string | null; email: string | null } | null
+      setProfile({ full_name: p?.full_name ?? '', email: p?.email ?? '', phone: p?.phone ?? '', role: p?.role ?? 'parent', plan_tier: p?.plan_tier ?? 'free' })
       setFullName(p?.full_name ?? '')
       setPhone(p?.phone ?? '')
     }
     load()
-  }, [router])
+  }, [userId])
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
     setError(null); setSaving(true); setSaved(false)
 
     const sb = getBrowserClient()
-    const { data: { user } } = await sb.auth.getUser()
-    if (!user) return
 
     const { error: uErr } = await sb
       .from('profiles')
       .update({ full_name: fullName.trim(), phone: phone.trim() || null })
-      .eq('id', user.id)
+      .eq('id', userId)
 
     setSaving(false)
     if (uErr) { setError('Không thể lưu. Thử lại nhé.'); return }

@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useRouter }                         from 'next/navigation'
 import Link                                  from 'next/link'
 import { getBrowserClient }                  from '../../../../lib/supabase'
+import { useUser }                           from '../../../../lib/user-context'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface Child {
@@ -186,7 +186,7 @@ function WeeklyCard({ summary, isLatest }: { summary: WeeklySummary; isLatest: b
 
 // ── Main Page ──────────────────────────────────────────────────────────────
 export default function ParentReportsPage() {
-  const router = useRouter()
+  const { userId } = useUser()
 
   const [children,      setChildren]      = useState<Child[]>([])
   const [activeId,      setActiveId]      = useState<string | null>(null)
@@ -200,13 +200,11 @@ export default function ParentReportsPage() {
   useEffect(() => {
     async function load() {
       const sb = getBrowserClient()
-      const { data: { user } } = await sb.auth.getUser()
-      if (!user) { router.push('/login'); return }
 
       const { data } = await sb
         .from('children')
         .select('id, full_name, grade')
-        .eq('parent_id', user.id)
+        .eq('parent_id', userId)
         .order('created_at', { ascending: true })
 
       const kids = (data ?? []) as Child[]
@@ -215,7 +213,7 @@ export default function ParentReportsPage() {
       setLoading(false)
     }
     load()
-  }, [router])
+  }, [userId])
 
   // Load data whenever active child changes
   const loadChildData = useCallback(async (childId: string) => {

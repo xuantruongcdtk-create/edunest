@@ -17,7 +17,7 @@ export default async function BghLayout({ children }: { children: React.ReactNod
   if (p?.role && !['bgh', 'admin'].includes(p.role)) redirect('/dashboard')
 
   return (
-    <DashboardLayout role="bgh" userName={p?.full_name ?? 'Ban Giám Hiệu'}>
+    <DashboardLayout role="bgh" userName={p?.full_name ?? 'Ban Giám Hiệu'} userId={user.id}>
       {children}
     </DashboardLayout>
   )

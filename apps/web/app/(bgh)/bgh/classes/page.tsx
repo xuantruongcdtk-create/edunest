@@ -1,10 +1,10 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useRouter }                         from 'next/navigation'
 import { getBrowserClient }                  from '../../../../lib/supabase'
 import { SchoolKPIGrid }                     from '../../../../components/bgh/SchoolKPIGrid'
 import { ClassRankTable }                    from '../../../../components/bgh/ClassRankTable'
+import { useUser }                           from '../../../../lib/user-context'
 
 interface KPIData {
   school_id:      string
@@ -18,7 +18,7 @@ interface KPIData {
 interface ClassAvg { [classId: string]: number }
 
 export default function BghClassesPage() {
-  const router = useRouter()
+  const { userId } = useUser()
 
   const [kpi,       setKpi]       = useState<KPIData | null>(null)
   const [classAvgs, setClassAvgs] = useState<ClassAvg>({})
@@ -93,12 +93,10 @@ export default function BghClassesPage() {
     setSaving(true)
 
     const sb = getBrowserClient()
-    const { data: { user } } = await sb.auth.getUser()
-    if (!user) { router.push('/login'); return }
 
     await sb.from('classes').insert({
       school_id:    kpi.school_id,
-      teacher_id:   user.id,
+      teacher_id:   userId,
       name:         newName.trim(),
       grade:        newGrade,
       academic_year: newYear,

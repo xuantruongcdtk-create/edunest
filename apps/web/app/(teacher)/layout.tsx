@@ -17,7 +17,7 @@ export default async function TeacherLayout({ children }: { children: React.Reac
   if (p?.role && !['teacher', 'admin'].includes(p.role)) redirect('/dashboard')
 
   return (
-    <DashboardLayout role="teacher" userName={p?.full_name ?? 'Giáo viên'}>
+    <DashboardLayout role="teacher" userName={p?.full_name ?? 'Giáo viên'} userId={user.id}>
       {children}
     </DashboardLayout>
   )

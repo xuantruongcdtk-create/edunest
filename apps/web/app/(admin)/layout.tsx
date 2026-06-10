@@ -17,7 +17,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (p?.role !== 'admin') redirect('/dashboard')
 
   return (
-    <DashboardLayout role="admin" userName={p?.full_name ?? 'Admin'}>
+    <DashboardLayout role="admin" userName={p?.full_name ?? 'Admin'} userId={user.id}>
       {children}
     </DashboardLayout>
   )

@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter }           from 'next/navigation'
 import Link                    from 'next/link'
 import { getBrowserClient }    from '../../../../lib/supabase'
+import { useUser }             from '../../../../lib/user-context'
 
 interface Child {
   id:          string
@@ -19,7 +19,7 @@ const GRADES = Array.from({ length: 12 }, (_, i) => i + 1)
 type ModalMode = 'add' | 'edit' | null
 
 export default function ChildrenPage() {
-  const router = useRouter()
+  const { userId } = useUser()
 
   const [children,  setChildren]  = useState<Child[]>([])
   const [loading,   setLoading]   = useState(true)
@@ -39,13 +39,11 @@ export default function ChildrenPage() {
   async function loadChildren() {
     setLoading(true)
     const sb = getBrowserClient()
-    const { data: { user } } = await sb.auth.getUser()
-    if (!user) { router.push('/login'); return }
 
     const { data: kids } = await sb
       .from('children')
       .select('id, full_name, grade, created_at')
-      .eq('parent_id', user.id)
+      .eq('parent_id', userId)
       .order('created_at')
 
     const list = (kids ?? []) as Omit<Child, 'avg_score' | 'score_count'>[]
@@ -88,13 +86,11 @@ export default function ChildrenPage() {
     setSaving(true); setError(null)
 
     const sb = getBrowserClient()
-    const { data: { user } } = await sb.auth.getUser()
-    if (!user) return
 
     if (modal === 'add') {
       if (children.length >= 5) { setError('Tối đa 5 học sinh trên tài khoản.'); setSaving(false); return }
       const { error: insErr } = await sb.from('children').insert({
-        parent_id: user.id,
+        parent_id: userId,
         full_name: formName.trim(),
         grade:     formGrade,
       })

@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useRouter }                         from 'next/navigation'
 import Link                                  from 'next/link'
 import { getBrowserClient }                  from '../../../../lib/supabase'
+import { useUser }                           from '../../../../lib/user-context'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface Student {
@@ -49,7 +49,7 @@ function labelColor(n: number | null) {
 }
 
 export default function TeacherStudentsPage() {
-  const router = useRouter()
+  const { userId } = useUser()
 
   const [students,  setStudents]  = useState<Student[]>([])
   const [loading,   setLoading]   = useState(true)
@@ -60,14 +60,12 @@ export default function TeacherStudentsPage() {
   const loadStudents = useCallback(async () => {
     setLoading(true)
     const sb = getBrowserClient()
-    const { data: { user } } = await sb.auth.getUser()
-    if (!user) { router.push('/login'); return }
 
     // Fetch teacher → student links with child info
     const { data: tsData } = await sb
       .from('teacher_students')
       .select('child_id, subject, children!inner(id, full_name, grade)')
-      .eq('teacher_id', user.id)
+      .eq('teacher_id', userId)
 
     if (!tsData || tsData.length === 0) { setStudents([]); setLoading(false); return }
 
@@ -106,7 +104,7 @@ export default function TeacherStudentsPage() {
     result.sort((a, b) => (b.avgScore ?? -1) - (a.avgScore ?? -1))
     setStudents(result)
     setLoading(false)
-  }, [router])
+  }, [userId])
 
   useEffect(() => { loadStudents() }, [loadStudents])
 

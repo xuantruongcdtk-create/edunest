@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect, Suspense } from 'react'
-import { useRouter, useSearchParams }     from 'next/navigation'
-import { getBrowserClient }               from '../../../../lib/supabase'
+import { useSearchParams }               from 'next/navigation'
+import { getBrowserClient }              from '../../../../lib/supabase'
+import { useUser }                       from '../../../../lib/user-context'
 
 interface ScoreRecord {
   id:           string
@@ -45,13 +46,12 @@ function getAcademicYear() {
 }
 
 function ScoresPageInner() {
-  const router       = useRouter()
+  const { userId }   = useUser()
   const searchParams = useSearchParams()
   const urlChildId   = searchParams.get('childId') ?? undefined
 
   const [children,   setChildren]   = useState<Child[]>([])
   const [activeId,   setActiveId]   = useState<string | undefined>(urlChildId)
-  const [userId,     setUserId]     = useState<string | null>(null)
   const [scores,     setScores]     = useState<ScoreRecord[]>([])
   const [loading,    setLoading]    = useState(true)
   const [showForm,   setShowForm]   = useState(false)
@@ -69,14 +69,11 @@ function ScoresPageInner() {
   useEffect(() => {
     async function load() {
       const sb = getBrowserClient()
-      const { data: { user } } = await sb.auth.getUser()
-      if (!user) { router.push('/login'); return }
-      setUserId(user.id)
 
       const { data: kids } = await sb
         .from('children')
         .select('id, full_name, grade')
-        .eq('parent_id', user.id)
+        .eq('parent_id', userId)
         .order('created_at')
 
       const childList = (kids ?? []) as Child[]
@@ -86,7 +83,7 @@ function ScoresPageInner() {
       setActiveId(cid)
     }
     load()
-  }, [router, urlChildId])
+  }, [userId, urlChildId])
 
   useEffect(() => {
     if (!activeId) return
@@ -120,7 +117,7 @@ function ScoresPageInner() {
     const sb = getBrowserClient()
     const { error: insErr } = await sb.from('score_records').insert({
       child_id:      activeId,
-      created_by:    userId!,
+      created_by:    userId,
       subject,
       score:         s,
       max_score:     m,

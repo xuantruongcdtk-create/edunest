@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useRouter }                         from 'next/navigation'
 import { getBrowserClient }                  from '../../../../lib/supabase'
+import { useUser }                           from '../../../../lib/user-context'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface Alert {
@@ -41,7 +41,7 @@ const TABS: { key: TabKey; label: string }[] = [
 ]
 
 export default function TeacherAlertsPage() {
-  const router = useRouter()
+  const { userId } = useUser()
 
   const [alerts,   setAlerts]   = useState<Alert[]>([])
   const [loading,  setLoading]  = useState(true)
@@ -51,13 +51,11 @@ export default function TeacherAlertsPage() {
   const loadAlerts = useCallback(async () => {
     setLoading(true)
     const sb = getBrowserClient()
-    const { data: { user } } = await sb.auth.getUser()
-    if (!user) { router.push('/login'); return }
 
     const { data } = await sb
       .from('alerts')
       .select('id, type, severity, title, body, is_read, read_at, child_id, created_at, children(full_name, grade)')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(50)
 
@@ -66,7 +64,7 @@ export default function TeacherAlertsPage() {
       child: Array.isArray(a.children) ? (a.children[0] ?? null) : (a.children ?? null),
     })) as Alert[])
     setLoading(false)
-  }, [router])
+  }, [userId])
 
   useEffect(() => { loadAlerts() }, [loadAlerts])
 
@@ -85,9 +83,7 @@ export default function TeacherAlertsPage() {
     if (unreadIds.length === 0) return
 
     const sb = getBrowserClient()
-    const { data: { user } } = await sb.auth.getUser()
-    if (!user) return
-    await sb.from('alerts').update({ is_read: true, read_at: new Date().toISOString() }).eq('user_id', user.id).eq('is_read', false)
+    await sb.from('alerts').update({ is_read: true, read_at: new Date().toISOString() }).eq('user_id', userId).eq('is_read', false)
     setAlerts((prev) => prev.map((a) => ({ ...a, is_read: true })))
   }
 
