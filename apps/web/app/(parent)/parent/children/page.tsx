@@ -59,7 +59,7 @@ export default function ChildrenPage() {
 
       const recs = (scores ?? []) as { score: number; max_score: number }[]
       const avg  = recs.length
-        ? recs.reduce((s: number, r) => s + (r.score / r.max_score) * 10, 0) / recs.length
+        ? recs.reduce<number>((s, r) => s + (r.score / r.max_score) * 10, 0) / recs.length
         : null
 
       return { ...child, avg_score: avg != null ? Math.round(avg * 10) / 10 : null, score_count: recs.length }
