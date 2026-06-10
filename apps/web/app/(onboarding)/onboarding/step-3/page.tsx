@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { getBrowserClient } from '../../../lib/supabase'
+import { getBrowserClient } from '../../../../lib/supabase'
 
 const SUBJECTS = ['Toán', 'Văn', 'Anh', 'Lý', 'Hóa', 'Sinh', 'Sử', 'Địa', 'GDCD']
 

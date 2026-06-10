@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter }           from 'next/navigation'
 import Link                    from 'next/link'
-import { getBrowserClient }    from '../../../lib/supabase'
+import { getBrowserClient }    from '../../../../lib/supabase'
 
 export default function OnboardingStep4() {
   const router = useRouter()

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter }           from 'next/navigation'
-import { getBrowserClient }    from '../../../lib/supabase'
+import { getBrowserClient }    from '../../../../lib/supabase'
 
 const GRADES = Array.from({ length: 12 }, (_, i) => i + 1)
 
