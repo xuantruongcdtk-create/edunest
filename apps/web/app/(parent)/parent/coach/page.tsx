@@ -68,32 +68,10 @@ function CoachPageInner() {
         )}
       </div>
 
-      {/* Suggestions */}
-      {activeChild && (
-        <div className="px-6 py-3 bg-gray-50 border-b border-gray-100 flex-shrink-0">
-          <p className="text-xs text-gray-500 mb-2">Gợi ý câu hỏi:</p>
-          <div className="flex flex-wrap gap-2">
-            {[
-              `${activeChild.full_name} học môn nào tốt nhất?`,
-              'Làm sao để cải thiện điểm Toán?',
-              'Con có dấu hiệu kiệt sức không?',
-              'Lên kế hoạch ôn thi cuối kỳ',
-            ].map((q) => (
-              <span
-                key={q}
-                className="text-xs bg-white border border-gray-200 text-gray-600 px-3 py-1.5 rounded-chip cursor-pointer hover:border-primary hover:text-primary transition-colors"
-              >
-                {q}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Chat area */}
       <div className="flex-1 min-h-0 p-4">
         {activeId ? (
-          <CoachChat childId={activeId} className="h-full" />
+          <CoachChat childId={activeId} childName={activeChild?.full_name} className="h-full" />
         ) : (
           <div className="h-full flex flex-col items-center justify-center text-center">
             <span className="text-5xl mb-4">🤖</span>
