@@ -31,7 +31,7 @@ const ACTION_ICON: Record<string, string> = {
 
 function DiffView({ oldData, newData }: { oldData: Record<string, unknown> | null; newData: Record<string, unknown> | null }) {
   if (!oldData && !newData) return null
-  const keys = [...new Set([...Object.keys(oldData ?? {}), ...Object.keys(newData ?? {})])]
+  const keys = Array.from(new Set([...Object.keys(oldData ?? {}), ...Object.keys(newData ?? {})]))
   const changed = keys.filter((k) => JSON.stringify((oldData ?? {})[k]) !== JSON.stringify((newData ?? {})[k]))
   if (changed.length === 0) return null
 
