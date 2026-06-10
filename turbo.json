@@ -5,7 +5,23 @@
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": [".next/**", "!.next/cache/**", "!.next/dev/**"]
+      "outputs": [".next/**", "!.next/cache/**", "!.next/dev/**"],
+      "passThroughEnv": [
+        "SUPABASE_SERVICE_ROLE_KEY",
+        "GOOGLE_AI_API_KEY",
+        "UPSTASH_REDIS_REST_URL",
+        "UPSTASH_REDIS_REST_TOKEN",
+        "MOMO_PARTNER_CODE",
+        "MOMO_ACCESS_KEY",
+        "MOMO_SECRET_KEY",
+        "MOMO_ENDPOINT",
+        "VNPAY_TMN_CODE",
+        "VNPAY_HASH_SECRET",
+        "VNPAY_URL",
+        "GOOGLE_CLOUD_CREDENTIALS",
+        "CRON_SECRET",
+        "RESEND_API_KEY"
+      ]
     },
     "lint": {
       "dependsOn": ["^lint"]
