@@ -49,7 +49,12 @@ export default function OnboardingStep1() {
 
     const { error: uErr } = await sb
       .from('profiles')
-      .upsert({ id: user.id, full_name: fullName.trim(), phone: phone.trim() || null })
+      .upsert({
+        id:        user.id,
+        email:     user.email!,
+        full_name: fullName.trim(),
+        phone:     phone.trim() || null,
+      })
 
     setLoading(false)
     if (uErr) { setError('Không thể lưu thông tin. Thử lại nhé.'); return }
