@@ -18,6 +18,7 @@ export function LoginForm() {
   const [error,    setError]    = useState<string | null>(null)
 
   const oauthError = searchParams.get('error') === 'oauth'
+  const oauthMsg   = searchParams.get('msg')
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -98,7 +99,7 @@ export function LoginForm() {
       {/* Error banner */}
       {(error || oauthError) && (
         <div className="bg-danger/8 border border-danger/20 text-danger text-sm rounded-input px-3 py-2.5 mb-4">
-          {error ?? 'Đăng nhập Google thất bại. Vui lòng thử lại.'}
+          {error ?? (oauthMsg ? `Lỗi OAuth: ${oauthMsg}` : 'Đăng nhập Google thất bại. Vui lòng thử lại.')}
         </div>
       )}
 
