@@ -45,6 +45,26 @@ function getAcademicYear() {
   return now.getMonth() >= 7 ? `${y}-${y + 1}` : `${y - 1}-${y}`
 }
 
+/** Convert dd/mm/yyyy → yyyy-mm-dd. Returns original string if already ISO or invalid. */
+function toISO(input: string): string {
+  const parts = input.split('/')
+  if (parts.length === 3) {
+    const [d, m, y] = parts
+    if (d && m && y && y.length === 4) return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`
+  }
+  return input
+}
+
+/** Convert yyyy-mm-dd → dd/mm/yyyy for display. */
+function toDisplay(iso: string): string {
+  const parts = iso.split('-')
+  if (parts.length === 3) {
+    const [y, m, d] = parts
+    return `${d}/${m}/${y}`
+  }
+  return iso
+}
+
 function ScoresPageInner() {
   const { userId }   = useUser()
   const searchParams = useSearchParams()
@@ -63,7 +83,7 @@ function ScoresPageInner() {
   const [score,     setScore]     = useState('')
   const [maxScore,  setMaxScore]  = useState('10')
   const [examType,  setExamType]  = useState('monthly')
-  const [examDate,  setExamDate]  = useState(new Date().toISOString().slice(0, 10))
+  const [examDate,  setExamDate]  = useState(toDisplay(new Date().toISOString().slice(0, 10)))
   const [semester,  setSemester]  = useState(1)
 
   useEffect(() => {
@@ -122,7 +142,7 @@ function ScoresPageInner() {
       score:         s,
       max_score:     m,
       period_type:   examType,
-      exam_date:     examDate,
+      exam_date:     toISO(examDate),
       semester,
       academic_year: getAcademicYear(),
       source:        'manual',
@@ -219,7 +239,9 @@ function ScoresPageInner() {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Ngày kiểm tra</label>
-                  <input type="date" value={examDate} onChange={(e) => setExamDate(e.target.value)}
+                  <input type="text" value={examDate}
+                    onChange={(e) => setExamDate(e.target.value)}
+                    placeholder="dd/mm/yyyy"
                     className="w-full border border-gray-200 rounded-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
                 </div>
               </div>
