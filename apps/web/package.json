@@ -37,7 +37,6 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
-    "@next/swc-win32-x64-msvc": "^14.2.33",
     "@repo/eslint-config": "*",
     "@repo/typescript-config": "*",
     "@types/node": "^20",
