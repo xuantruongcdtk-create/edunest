@@ -149,7 +149,11 @@ function ScoresPageInner() {
     })
 
     setSaving(false)
-    if (insErr) { setError(`[debug] ${insErr.code}: ${insErr.message}`); return }
+    if (insErr) {
+      console.error('Score insert error:', insErr)
+      setError(`Lỗi ${insErr.code ?? '?'}: ${insErr.message ?? JSON.stringify(insErr)}`)
+      return
+    }
     setScore(''); setShowForm(false)
     fetchScores(activeId)
   }
