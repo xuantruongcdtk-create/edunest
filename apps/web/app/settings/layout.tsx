@@ -19,6 +19,7 @@ export default async function SettingsLayout({ children }: { children: React.Rea
     <DashboardLayout
       role={(p?.role as 'parent' | 'teacher' | 'bgh' | 'admin') ?? 'parent'}
       userName={p?.full_name ?? 'Người dùng'}
+      userId={user.id}
     >
       {children}
     </DashboardLayout>
