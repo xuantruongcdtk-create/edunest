@@ -1,15 +1,19 @@
 'use client'
 
-import { useEffect } from 'react'
+import { Suspense, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { getBrowserClient } from '../../../lib/supabase'
 
-/**
- * Handles both OAuth flows after Google redirects back:
- * - PKCE flow: URL has ?code=... → exchangeCodeForSession
- * - Implicit flow: URL has #access_token=... in hash → Supabase JS auto-processes
- */
-export default function AuthCallbackPage() {
+const Spinner = () => (
+  <div className="min-h-screen flex items-center justify-center">
+    <div className="flex flex-col items-center gap-3 text-gray-500">
+      <span className="h-8 w-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+      <p className="text-sm">Đang xác thực...</p>
+    </div>
+  </div>
+)
+
+function CallbackHandler() {
   const router       = useRouter()
   const searchParams = useSearchParams()
 
@@ -68,12 +72,13 @@ export default function AuthCallbackPage() {
     requestAnimationFrame(() => { checkSession() })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  return <Spinner />
+}
+
+export default function AuthCallbackPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="flex flex-col items-center gap-3 text-gray-500">
-        <span className="h-8 w-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-        <p className="text-sm">Đang xác thực...</p>
-      </div>
-    </div>
+    <Suspense fallback={<Spinner />}>
+      <CallbackHandler />
+    </Suspense>
   )
 }
