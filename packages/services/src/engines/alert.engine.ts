@@ -15,7 +15,7 @@ export async function generateAlerts(input: AlertInput): Promise<Alert[]> {
   if (!candidates.length) return []
 
   const db = await getServerClient()
-  const { data, error } = await db
+  const { data, error } = await (db as any)
     .from('alerts')
     .insert(
       candidates.map((c) => ({

@@ -14,7 +14,7 @@ export async function POST(req: Request) {
   }
 
   if (body.resultCode === '0') {
-    const { data: tx, error: txErr } = await adminClient
+    const { data: tx, error: txErr } = await (adminClient as any)
       .from('payment_transactions')
       .update({ status: 'success', metadata: body })
       .eq('provider_tx_id', body.orderId)
@@ -28,7 +28,7 @@ export async function POST(req: Request) {
       const expiresAt = new Date()
       expiresAt.setMonth(expiresAt.getMonth() + months)
 
-      await adminClient.from('profiles').update({
+      await (adminClient as any).from('profiles').update({
         plan_tier,
         plan_status:     'active',
         plan_expires_at: expiresAt.toISOString(),
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
 
     logger.info('[MoMo webhook] Payment confirmed', { orderId: body.orderId })
   } else {
-    await adminClient
+    await (adminClient as any)
       .from('payment_transactions')
       .update({ status: 'failed', metadata: body })
       .eq('provider_tx_id', body.orderId)

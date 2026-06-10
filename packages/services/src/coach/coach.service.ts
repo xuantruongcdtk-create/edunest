@@ -19,7 +19,7 @@ export async function getOrCreateConversation(
 
   if (error && error.code === 'PGRST116') {
     // Create new conversation
-    const { data: created, error: ce } = await db
+    const { data: created, error: ce } = await (db as any)
       .from('coach_conversations')
       .insert({ user_id: userId, child_id: childId ?? null, messages: [] })
       .select()
@@ -72,7 +72,7 @@ export async function* streamCoachReply(
     { role: 'assistant', content: assistantText, created_at: new Date().toISOString() },
   ]
 
-  await db
+  await (db as any)
     .from('coach_conversations')
     .update({ messages: newMessages, updated_at: new Date().toISOString() })
     .eq('id', conversationId)

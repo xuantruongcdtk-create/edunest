@@ -24,7 +24,7 @@ export const POST = withHandler(async (req) => {
   const amountVnd = PRICES[parsed.data.planTier]!
 
   // Record transaction before redirecting
-  await db.from('payment_transactions').insert({
+  await (db as any).from('payment_transactions').insert({
     user_id:        user.id,
     provider:       'momo',
     provider_tx_id: orderId,

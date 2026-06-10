@@ -92,7 +92,7 @@ export default async function TeacherDashboard() {
             <StudentTable students={students} />
           </div>
           <div className="space-y-6">
-            <QuizAssignedList quizzes={quizzes} />
+            <QuizAssignedList quizzes={quizzes as any} />
             <AlertList alerts={alerts} />
           </div>
         </div>

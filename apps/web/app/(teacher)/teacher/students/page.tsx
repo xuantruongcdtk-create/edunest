@@ -78,7 +78,7 @@ export default function TeacherStudentsPage() {
       if (!childMap.has(c.id)) childMap.set(c.id, { ...c, subjects: [] })
       if (row.subject) childMap.get(c.id)!.subjects.push(row.subject)
     }
-    const childIds = [...childMap.keys()]
+    const childIds = Array.from(childMap.keys())
 
     // Fetch scores for all children
     const { data: scoreData } = await sb
@@ -94,7 +94,7 @@ export default function TeacherStudentsPage() {
       avgMap[s.child_id]!.count += 1
     }
 
-    const result: Student[] = [...childMap.values()].map((c) => {
+    const result: Student[] = Array.from(childMap.values()).map((c) => {
       const entry = avgMap[c.id]
       return {
         ...c,

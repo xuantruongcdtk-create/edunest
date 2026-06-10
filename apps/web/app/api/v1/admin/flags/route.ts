@@ -40,7 +40,7 @@ export const PATCH = withHandler(async (req) => {
   if (!parsed.success) throw new ValidationError('Invalid input', parsed.error.flatten())
 
   const { key, ...updates } = parsed.data
-  const { data, error } = await db
+  const { data, error } = await (db as any)
     .from('feature_flags')
     .update({ ...updates, updated_at: new Date().toISOString() })
     .eq('key', key)

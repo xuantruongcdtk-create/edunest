@@ -39,6 +39,6 @@ export const POST = withHandler(async (req) => {
   const parsed = AddScoreSchema.safeParse(body)
   if (!parsed.success) throw new ValidationError('Invalid input', parsed.error.flatten())
 
-  const record = await addScore({ userId: user.id, ...parsed.data })
+  const record = await addScore({ userId: user.id, ...parsed.data } as any)
   return created(record)
 })

@@ -6,12 +6,12 @@ import { cn } from '../../lib/cn'
 interface Child { id: string; full_name: string; grade: number }
 
 interface ChildSwitcherProps extends HTMLAttributes<HTMLDivElement> {
-  children:        Child[]
-  activeChildId:   string
+  kids:          Child[]
+  activeChildId: string
 }
 
 export const ChildSwitcher = forwardRef<HTMLDivElement, ChildSwitcherProps>(
-  ({ className, children: kids, activeChildId, ...props }, ref) => {
+  ({ className, kids, activeChildId, ...props }, ref) => {
     const router       = useRouter()
     const searchParams = useSearchParams()
 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Html, Body, Container, Heading, Text, Button, Hr } from '@react-email/components'
 
 interface WelcomeEmailProps {

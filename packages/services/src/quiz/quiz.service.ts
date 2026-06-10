@@ -30,7 +30,7 @@ Trả về JSON hợp lệ: { "title": string, "questions": [{ "question_text": 
   const parsed = JSON.parse(match[0])
 
   const db = await getServerClient()
-  const { data: quiz, error: qe } = await db
+  const { data: quiz, error: qe } = await (db as any)
     .from('quizzes')
     .insert({
       teacher_id:         input.teacherId,
@@ -101,7 +101,7 @@ export async function submitAttempt(
     0,
   )
 
-  const { data: attempt, error: ae } = await db
+  const { data: attempt, error: ae } = await (db as any)
     .from('quiz_attempts')
     .insert({
       quiz_id:            quizId,

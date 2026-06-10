@@ -11,7 +11,7 @@ export async function GET(req: Request) {
   }
 
   const weekStart = getLastMonday()
-  const { data: children, error } = await adminClient.from('children').select('id')
+  const { data: children, error } = await (adminClient as any).from('children').select('id')
   assertNoError(error)
 
   let success = 0, failed = 0

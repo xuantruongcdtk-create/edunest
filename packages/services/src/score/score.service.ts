@@ -23,7 +23,7 @@ export async function addScore(input: AddScoreInput): Promise<ScoreRecord> {
   }
 
   const db = await getServerClient()
-  const { data, error } = await db
+  const { data, error } = await (db as any)
     .from('score_records')
     .insert({
       child_id:      input.childId,

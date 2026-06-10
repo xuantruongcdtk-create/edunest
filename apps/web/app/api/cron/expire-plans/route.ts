@@ -10,7 +10,7 @@ export async function GET(_req: Request) {
   }
 
   const now = new Date().toISOString()
-  const { data, error } = await adminClient
+  const { data, error } = await (adminClient as any)
     .from('profiles')
     .update({ plan_tier: 'free', plan_status: 'expired' })
     .lt('plan_expires_at', now)

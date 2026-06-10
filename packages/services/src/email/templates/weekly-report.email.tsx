@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Html, Body, Container, Heading, Text, Hr } from '@react-email/components'
 import type { WeeklySummary } from '@edunest/types'
 

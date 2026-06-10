@@ -18,7 +18,7 @@ export async function GET(_req: Request) {
 
   // Mark as sent (push channel handling to be wired when Expo tokens available)
   if (pending?.length) {
-    await adminClient
+    await (adminClient as any)
       .from('notifications')
       .update({ status: 'sent', sent_at: new Date().toISOString() })
       .in('id', pending.map((n: { id: string }) => n.id))

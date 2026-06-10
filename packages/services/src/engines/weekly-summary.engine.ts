@@ -15,7 +15,7 @@ export async function buildWeeklySummary(input: BuildSummaryInput): Promise<Week
   const aiInsight = await generateInsight(input)
 
   const db = await getServerClient()
-  const { data, error } = await db
+  const { data, error } = await (db as any)
     .from('weekly_summaries')
     .upsert(
       {

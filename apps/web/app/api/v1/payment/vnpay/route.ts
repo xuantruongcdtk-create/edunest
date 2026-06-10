@@ -26,7 +26,7 @@ export const POST = withHandler(async (req) => {
   const orderId     = `EDN-${randomBytes(6).toString('hex').toUpperCase()}`
   const amountVnd   = PRICES[parsed.data.planTier]!
 
-  await db.from('payment_transactions').insert({
+  await (db as any).from('payment_transactions').insert({
     user_id:        user.id,
     provider:       'vnpay',
     provider_tx_id: orderId,

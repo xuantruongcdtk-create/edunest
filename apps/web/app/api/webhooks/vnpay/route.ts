@@ -14,7 +14,7 @@ export async function GET(req: Request) {
   }
 
   if (query.vnp_ResponseCode === '00') {
-    const { data: tx, error: txErr } = await adminClient
+    const { data: tx, error: txErr } = await (adminClient as any)
       .from('payment_transactions')
       .update({ status: 'success', metadata: query })
       .eq('provider_tx_id', query.vnp_TxnRef)
@@ -28,7 +28,7 @@ export async function GET(req: Request) {
       const expiresAt = new Date()
       expiresAt.setMonth(expiresAt.getMonth() + months)
 
-      await adminClient.from('profiles').update({
+      await (adminClient as any).from('profiles').update({
         plan_tier,
         plan_status:     'active',
         plan_expires_at: expiresAt.toISOString(),
@@ -37,7 +37,7 @@ export async function GET(req: Request) {
 
     logger.info('[VNPAY webhook] Payment confirmed', { txnRef: query.vnp_TxnRef })
   } else {
-    await adminClient
+    await (adminClient as any)
       .from('payment_transactions')
       .update({ status: 'failed', metadata: query })
       .eq('provider_tx_id', query.vnp_TxnRef)

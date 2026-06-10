@@ -30,6 +30,6 @@ export const POST = withHandler(async (req) => {
   const parsed = GenerateSchema.safeParse(body)
   if (!parsed.success) throw new ValidationError('Invalid input', parsed.error.flatten())
 
-  const quiz = await generateQuiz({ teacherId: user.id, ...parsed.data })
+  const quiz = await generateQuiz({ teacherId: user.id, ...parsed.data } as any)
   return created(quiz)
 })

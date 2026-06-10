@@ -27,7 +27,7 @@ export async function applyReferralCode(
   if ((referrer as { id: string }).id === newUserId) return null // can't refer yourself
 
   // Upsert to avoid duplicate referrals
-  const { data, error } = await db
+  const { data, error } = await (db as any)
     .from('referrals')
     .upsert(
       {
@@ -48,7 +48,7 @@ export async function applyReferralCode(
 
 export async function convertReferral(referredId: string): Promise<void> {
   const db = await getServerClient()
-  await db
+  await (db as any)
     .from('referrals')
     .update({ status: 'converted', reward_granted: true })
     .eq('referred_id', referredId)

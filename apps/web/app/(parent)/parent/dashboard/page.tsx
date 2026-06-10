@@ -65,7 +65,7 @@ export default async function ParentDashboard({ searchParams }: PageProps) {
     <div className="flex flex-col min-h-full">
       <Topbar
         title={`Dashboard · ${activeChild.full_name}`}
-        actions={<ChildSwitcher children={kids} activeChildId={activeChild.id} />}
+        actions={<ChildSwitcher kids={kids} activeChildId={activeChild.id} />}
       />
       <div className="p-6 space-y-6 flex-1">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
