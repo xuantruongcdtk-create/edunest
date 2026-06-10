@@ -1,0 +1,17 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/weekly-summaries",
+      "schedule": "0 1 * * 1"
+    },
+    {
+      "path": "/api/cron/expire-plans",
+      "schedule": "0 17 * * *"
+    },
+    {
+      "path": "/api/cron/process-notifications",
+      "schedule": "*/15 * * * *"
+    }
+  ]
+}
+

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <!-- Background circle -->
+  <circle cx="24" cy="24" r="24" fill="#1D9E75"/>
+  <!-- Book pages -->
+  <path d="M13 16C13 14.895 13.895 14 15 14H22C23.105 14 24 14.895 24 16V34C24 34 20 32 15 34C13.895 34.447 13 33.553 13 32V16Z" fill="white" fill-opacity="0.95"/>
+  <path d="M35 16C35 14.895 34.105 14 33 14H26C24.895 14 24 14.895 24 16V34C24 34 28 32 33 34C34.105 34.447 35 33.553 35 32V16Z" fill="white" fill-opacity="0.75"/>
+  <!-- Spine line -->
+  <line x1="24" y1="15" x2="24" y2="34" stroke="#1D9E75" stroke-width="1.5"/>
+  <!-- Star/AI spark -->
+  <circle cx="34" cy="14" r="6" fill="#534AB7"/>
+  <path d="M34 10L34.9 12.9L38 14L34.9 15.1L34 18L33.1 15.1L30 14L33.1 12.9L34 10Z" fill="white"/>
+</svg>

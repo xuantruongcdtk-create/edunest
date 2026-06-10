@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Allow: /pricing
+
+Disallow: /dashboard
+Disallow: /parent/
+Disallow: /teacher/
+Disallow: /bgh/
+Disallow: /admin/
+Disallow: /onboarding/
+Disallow: /api/
+
+Sitemap: https://edunest.vn/sitemap.xml
