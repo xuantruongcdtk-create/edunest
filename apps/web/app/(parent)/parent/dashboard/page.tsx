@@ -52,7 +52,7 @@ export default async function ParentDashboard({ searchParams }: PageProps) {
 
   const alerts   = (alertsRes.data ?? []) as Parameters<typeof AlertList>[0]['alerts']
   const avgScore = scores.length
-    ? scores.reduce<number>((s, r) => s + r.average, 0) / scores.length
+    ? scores.map((r) => r.average).reduce((s, a) => s + a, 0) / scores.length
     : 0
 
   const lastMsg = (() => {

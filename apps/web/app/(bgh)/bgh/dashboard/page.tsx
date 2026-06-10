@@ -44,7 +44,7 @@ export default async function BghDashboard() {
   const scores  = (scoresRes.data ?? []) as { score: number; max_score: number; child_id: string }[]
 
   const avgScore = scores.length
-    ? scores.reduce<number>((s, r) => s + (r.score / r.max_score) * 10, 0) / scores.length
+    ? scores.map((r) => (r.score / r.max_score) * 10).reduce((s, a) => s + a, 0) / scores.length
     : 0
 
   const kpi = {
