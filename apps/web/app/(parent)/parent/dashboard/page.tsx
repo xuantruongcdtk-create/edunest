@@ -47,7 +47,7 @@ export default async function ParentDashboard({ searchParams }: PageProps) {
       .order('updated_at', { ascending: false })
       .limit(1)
       .single()
-      .catch(() => ({ data: null })),
+      .then((res) => res, () => ({ data: null })),
   ])
 
   const alerts   = (alertsRes.data ?? []) as Parameters<typeof AlertList>[0]['alerts']
