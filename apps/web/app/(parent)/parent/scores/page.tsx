@@ -9,19 +9,33 @@ interface ScoreRecord {
   subject:      string
   score:        number
   max_score:    number
-  exam_type:    string
+  period_type:  string
   exam_date:    string
   semester:     number
 }
 
 interface Child { id: string; full_name: string; grade: number }
 
-const SUBJECTS   = ['Toán', 'Văn', 'Anh', 'Lý', 'Hóa', 'Sinh', 'Sử', 'Địa', 'GDCD', 'Tin học', 'Thể dục', 'Âm nhạc', 'Mỹ thuật']
+const SUBJECTS = [
+  { label: 'Toán',      value: 'math' },
+  { label: 'Văn',       value: 'literature' },
+  { label: 'Anh',       value: 'english' },
+  { label: 'Lý',        value: 'physics' },
+  { label: 'Hóa',       value: 'chemistry' },
+  { label: 'Sinh',      value: 'biology' },
+  { label: 'Sử',        value: 'history' },
+  { label: 'Địa',       value: 'geography' },
+  { label: 'GDCD',      value: 'civics' },
+  { label: 'Tin học',   value: 'informatics' },
+]
+const SUBJECT_LABEL: Record<string, string> = Object.fromEntries(
+  SUBJECTS.map((s) => [s.value, s.label])
+)
+
 const EXAM_TYPES = [
-  { value: 'oral',       label: 'Kiểm tra miệng' },
-  { value: 'quiz_15',    label: 'Kiểm tra 15 phút' },
-  { value: 'midterm',    label: 'Kiểm tra 45 phút' },
-  { value: 'final',      label: 'Thi học kỳ' },
+  { value: 'weekly',   label: 'Kiểm tra miệng / 15 phút' },
+  { value: 'monthly',  label: 'Kiểm tra 45 phút' },
+  { value: 'semester', label: 'Thi học kỳ' },
 ]
 
 function getAcademicYear() {
@@ -37,6 +51,7 @@ function ScoresPageInner() {
 
   const [children,   setChildren]   = useState<Child[]>([])
   const [activeId,   setActiveId]   = useState<string | undefined>(urlChildId)
+  const [userId,     setUserId]     = useState<string | null>(null)
   const [scores,     setScores]     = useState<ScoreRecord[]>([])
   const [loading,    setLoading]    = useState(true)
   const [showForm,   setShowForm]   = useState(false)
@@ -44,10 +59,10 @@ function ScoresPageInner() {
   const [error,      setError]      = useState<string | null>(null)
 
   // Form state
-  const [subject,   setSubject]   = useState(SUBJECTS[0]!)
+  const [subject,   setSubject]   = useState(SUBJECTS[0]!.value)
   const [score,     setScore]     = useState('')
   const [maxScore,  setMaxScore]  = useState('10')
-  const [examType,  setExamType]  = useState('midterm')
+  const [examType,  setExamType]  = useState('monthly')
   const [examDate,  setExamDate]  = useState(new Date().toISOString().slice(0, 10))
   const [semester,  setSemester]  = useState(1)
 
@@ -56,6 +71,7 @@ function ScoresPageInner() {
       const sb = getBrowserClient()
       const { data: { user } } = await sb.auth.getUser()
       if (!user) { router.push('/login'); return }
+      setUserId(user.id)
 
       const { data: kids } = await sb
         .from('children')
@@ -82,7 +98,7 @@ function ScoresPageInner() {
     const sb = getBrowserClient()
     const { data } = await sb
       .from('score_records')
-      .select('id, subject, score, max_score, exam_type, exam_date, semester')
+      .select('id, subject, score, max_score, period_type, exam_date, semester')
       .eq('child_id', childId)
       .eq('academic_year', getAcademicYear())
       .order('exam_date', { ascending: false })
@@ -104,17 +120,19 @@ function ScoresPageInner() {
     const sb = getBrowserClient()
     const { error: insErr } = await sb.from('score_records').insert({
       child_id:      activeId,
+      created_by:    userId!,
       subject,
       score:         s,
       max_score:     m,
-      exam_type:     examType,
+      period_type:   examType,
       exam_date:     examDate,
       semester,
       academic_year: getAcademicYear(),
+      source:        'manual',
     })
 
     setSaving(false)
-    if (insErr) { setError('Không thể lưu điểm. Thử lại nhé.'); return }
+    if (insErr) { setError(`[debug] ${insErr.code}: ${insErr.message}`); return }
     setScore(''); setShowForm(false)
     fetchScores(activeId)
   }
@@ -172,7 +190,7 @@ function ScoresPageInner() {
                   <label className="block text-xs font-medium text-gray-600 mb-1">Môn học</label>
                   <select value={subject} onChange={(e) => setSubject(e.target.value)}
                     className="w-full border border-gray-200 rounded-input px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30">
-                    {SUBJECTS.map((s) => <option key={s}>{s}</option>)}
+                    {SUBJECTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                   </select>
                 </div>
                 <div>
@@ -272,8 +290,8 @@ function ScoresPageInner() {
                     const norm = (s.score / s.max_score) * 10
                     return (
                       <tr key={s.id} className="hover:bg-gray-50/50 transition-colors">
-                        <td className="px-4 py-3 font-medium text-gray-800">{s.subject}</td>
-                        <td className="px-4 py-3 text-gray-500">{EXAM_TYPES.find((t) => t.value === s.exam_type)?.label ?? s.exam_type}</td>
+                        <td className="px-4 py-3 font-medium text-gray-800">{SUBJECT_LABEL[s.subject] ?? s.subject}</td>
+                        <td className="px-4 py-3 text-gray-500">{EXAM_TYPES.find((t) => t.value === s.period_type)?.label ?? s.period_type}</td>
                         <td className="px-4 py-3 font-semibold text-gray-900">{s.score}</td>
                         <td className="px-4 py-3 text-gray-400">{s.max_score}</td>
                         <td className="px-4 py-3">
