@@ -38,7 +38,7 @@ export const GET = withHandler(async (_req) => {
     const totalStudents = childrenRes.count ?? 0
     const scores = (scoresRes.data ?? []) as { score: number; max_score: number }[]
     const avgScore = scores.length
-      ? Math.round((scores.reduce((s, r) => s + (r.score / r.max_score) * 10, 0) / scores.length) * 10) / 10
+      ? Math.round((scores.reduce((s: number, r) => s + (r.score / r.max_score) * 10, 0) / scores.length) * 10) / 10
       : 0
 
     return {

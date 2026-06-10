@@ -331,7 +331,7 @@ export default function ParentReportsPage() {
               {[
                 { label: 'Lần nhập điểm', value: scores.length,          color: 'text-gray-900' },
                 { label: 'Điểm TB',       value: scores.length > 0
-                    ? ((scores.reduce((s, r) => s + (r.score / r.max_score) * 10, 0) / scores.length)).toFixed(1)
+                    ? ((scores.reduce((s: number, r) => s + (r.score / r.max_score) * 10, 0) / scores.length)).toFixed(1)
                     : '—',                                                  color: 'text-primary' },
                 { label: 'Tuần báo cáo', value: summaries.length,        color: 'text-accent' },
                 { label: 'Cảnh báo mới', value: unreadAlerts.length,     color: unreadAlerts.length > 0 ? 'text-danger' : 'text-success' },
