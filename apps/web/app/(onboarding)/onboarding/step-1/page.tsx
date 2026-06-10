@@ -57,7 +57,7 @@ export default function OnboardingStep1() {
       })
 
     setLoading(false)
-    if (uErr) { setError('Không thể lưu thông tin. Thử lại nhé.'); return }
+    if (uErr) { setError(`[debug] ${uErr.code}: ${uErr.message}`); return }
 
     router.push('/onboarding/step-2')
   }
