@@ -51,7 +51,7 @@ export default function BghClassesPage() {
         .in('class_id', classIds)
 
       if (memberships && memberships.length > 0) {
-        const childIds = [...new Set(memberships.map((m: { child_id: string }) => m.child_id))]
+        const childIds = Array.from(new Set(memberships.map((m: { child_id: string }) => m.child_id)))
         const { data: scores } = await sb
           .from('score_records')
           .select('child_id, score, max_score')

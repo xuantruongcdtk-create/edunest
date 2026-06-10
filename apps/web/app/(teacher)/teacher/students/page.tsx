@@ -110,7 +110,7 @@ export default function TeacherStudentsPage() {
 
   useEffect(() => { loadStudents() }, [loadStudents])
 
-  const allSubjects = [...new Set(students.flatMap((s) => s.subjects))]
+  const allSubjects = Array.from(new Set(students.flatMap((s) => s.subjects)))
 
   const filtered = students.filter((s) => {
     const matchName = search === '' || s.full_name.toLowerCase().includes(search.toLowerCase())
