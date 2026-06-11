@@ -5,11 +5,21 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { getBrowserClient } from '../../lib/supabase'
 
+type Role = 'parent' | 'teacher'
+
+const ROLE_DASHBOARDS: Record<string, string> = {
+  parent:  '/parent/dashboard',
+  teacher: '/teacher/dashboard',
+  bgh:     '/bgh/dashboard',
+  admin:   '/admin/dashboard',
+}
+
 export function LoginForm() {
   const router       = useRouter()
   const searchParams = useSearchParams()
-  const nextUrl      = searchParams.get('next') ?? '/dashboard'
+  const nextUrl      = searchParams.get('next') ?? ''
 
+  const [role,     setRole]     = useState<Role>('parent')
   const [email,    setEmail]    = useState('')
   const [password, setPassword] = useState('')
   const [showPwd,  setShowPwd]  = useState(false)
@@ -27,7 +37,7 @@ export function LoginForm() {
 
     try {
       const supabase = getBrowserClient()
-      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password })
 
       if (signInError) {
         if (signInError.message.includes('Invalid login credentials')) {
@@ -40,7 +50,17 @@ export function LoginForm() {
         return
       }
 
-      router.push(nextUrl)
+      if (signInData.user) {
+        // Sync the selected role to the profile so the dashboard reflects it
+        await supabase.from('profiles').upsert({
+          id:    signInData.user.id,
+          email: signInData.user.email!,
+          role,
+        })
+      }
+
+      // If caller specified a next URL, honour it; otherwise go to the role dashboard
+      router.push(nextUrl || ROLE_DASHBOARDS[role] || '/dashboard')
       router.refresh()
     } finally {
       setLoading(false)
@@ -104,6 +124,31 @@ export function LoginForm() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Role picker */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Bạn là</label>
+          <div className="grid grid-cols-2 gap-2">
+            {([
+              { value: 'parent',  label: 'Phụ huynh', icon: '👨‍👩‍👧' },
+              { value: 'teacher', label: 'Giáo viên',  icon: '👩‍🏫' },
+            ] as { value: Role; label: string; icon: string }[]).map(({ value, label, icon }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setRole(value)}
+                className={`flex items-center justify-center gap-2 py-2.5 rounded-input border text-sm font-medium transition-colors ${
+                  role === value
+                    ? 'border-primary bg-primary/8 text-primary'
+                    : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                }`}
+              >
+                <span>{icon}</span>
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
           <input
