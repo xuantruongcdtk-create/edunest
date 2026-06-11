@@ -7,9 +7,12 @@ const GenerateSchema = z.object({
   subject:          z.string(),
   grade:            z.number().int().min(1).max(12),
   difficulty:       z.enum(['easy', 'medium', 'hard']),
-  questionCount:    z.number().int().min(5).max(20).default(10),
+  questionCount:    z.number().int().min(0).max(20).default(10),   // số câu trắc nghiệm
+  essayCount:       z.number().int().min(0).max(10).default(0),    // số câu tự luận
   timeLimitMinutes: z.number().int().min(5).max(90).default(15),
   topic:            z.string().optional(),
+}).refine((d) => d.questionCount + d.essayCount >= 1, {
+  message: 'Cần ít nhất 1 câu hỏi (trắc nghiệm hoặc tự luận)',
 })
 
 export const GET = withHandler(async (_req) => {

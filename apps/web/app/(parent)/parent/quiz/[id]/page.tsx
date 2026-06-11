@@ -15,10 +15,20 @@ interface Child {
 interface Question {
   id: string
   question_text: string
+  question_type: 'mcq' | 'essay'
   options: string[]
-  correct_index: number
+  correct_index: number | null
+  sample_answer: string | null
   explanation: string | null
   order_index: number
+}
+
+interface AttemptDetail {
+  type:      'mcq' | 'essay'
+  score:     number
+  max:       number
+  correct?:  boolean
+  feedback?: string
 }
 
 interface QuizDetail {
@@ -37,6 +47,7 @@ interface AttemptResult {
   score: number
   max_score: number
   time_taken_seconds: number
+  details?: AttemptDetail[]
 }
 
 type PageState = 'loading' | 'intro' | 'taking' | 'results' | 'notfound'
@@ -58,7 +69,7 @@ export default function ParentQuizAttemptPage({ params }: { params: { id: string
   const [children,      setChildren]      = useState<Child[]>([])
   const [selectedChild, setSelectedChild] = useState<string>('')
   const [currentQ,      setCurrentQ]      = useState(0)
-  const [answers,       setAnswers]       = useState<(number | null)[]>([])
+  const [answers,       setAnswers]       = useState<(number | string | null)[]>([])
   const [timeLeft,      setTimeLeft]      = useState(0)
   const [startTime,     setStartTime]     = useState(0)
   const [result,        setResult]        = useState<AttemptResult | null>(null)
@@ -84,7 +95,7 @@ export default function ParentQuizAttemptPage({ params }: { params: { id: string
 
       const { data: questions } = await sb
         .from('quiz_questions')
-        .select('id, question_text, options, correct_index, explanation, order_index')
+        .select('id, question_text, question_type, options, correct_index, sample_answer, explanation, order_index')
         .eq('quiz_id', id)
         .order('order_index', { ascending: true })
 
@@ -106,8 +117,19 @@ export default function ParentQuizAttemptPage({ params }: { params: { id: string
     if (timerRef.current) clearInterval(timerRef.current)
     setSubmitting(true)
 
-    const timeTaken     = Math.round((Date.now() - startTime) / 1000)
-    const finalAnswers  = answers.map((a) => a ?? 0)
+    const timeTaken = Math.round((Date.now() - startTime) / 1000)
+    // Trắc nghiệm: index (mặc định 0 nếu bỏ trống). Tự luận: chuỗi (mặc định '').
+    const finalAnswers = quiz.questions.map((q, i) =>
+      q.question_type === 'essay' ? String(answers[i] ?? '') : (answers[i] ?? 0),
+    )
+
+    // Fallback chỉ chấm được trắc nghiệm (khi API lỗi)
+    const localFallback = (): AttemptResult => {
+      const POINTS = 10
+      const score = quiz.questions.reduce((sum, q, i) =>
+        sum + (q.question_type !== 'essay' && finalAnswers[i] === q.correct_index ? POINTS : 0), 0)
+      return { score, max_score: quiz.questions.length * POINTS, time_taken_seconds: timeTaken }
+    }
 
     try {
       const res = await fetch('/api/v1/quiz/attempt', {
@@ -123,16 +145,17 @@ export default function ParentQuizAttemptPage({ params }: { params: { id: string
 
       if (res.ok) {
         const data = await res.json()
-        setResult({ score: data.data.score, max_score: data.data.max_score, time_taken_seconds: timeTaken })
+        setResult({
+          score:              data.data.score,
+          max_score:          data.data.max_score,
+          time_taken_seconds: timeTaken,
+          details:            data.data.details as AttemptDetail[] | undefined,
+        })
       } else {
-        const score = finalAnswers.reduce((sum, ans, i) =>
-          sum + (ans === quiz.questions[i].correct_index ? 1 : 0), 0)
-        setResult({ score, max_score: quiz.questions.length, time_taken_seconds: timeTaken })
+        setResult(localFallback())
       }
     } catch {
-      const score = finalAnswers.reduce((sum, ans, i) =>
-        sum + (ans === quiz.questions[i].correct_index ? 1 : 0), 0)
-      setResult({ score, max_score: quiz.questions.length, time_taken_seconds: timeTaken })
+      setResult(localFallback())
     }
 
     setPageState('results')
@@ -282,7 +305,8 @@ export default function ParentQuizAttemptPage({ params }: { params: { id: string
   // ── Taking ────────────────────────────────────────────────────────────────
   if (pageState === 'taking') {
     const q           = quiz.questions[currentQ]
-    const answered    = answers.filter((a) => a !== null).length
+    const isAnswered  = (a: number | string | null) => a !== null && a !== ''
+    const answered    = answers.filter(isAnswered).length
     const progress    = ((currentQ + 1) / quiz.questions.length) * 100
     const isUrgent    = timeLeft < 60
     const isLastQ     = currentQ === quiz.questions.length - 1
@@ -316,34 +340,51 @@ export default function ParentQuizAttemptPage({ params }: { params: { id: string
               <span className="flex-shrink-0 h-8 w-8 rounded-full bg-primary/10 text-primary font-bold text-sm flex items-center justify-center">
                 {currentQ + 1}
               </span>
-              <p className="text-gray-900 font-medium leading-relaxed">{q.question_text}</p>
+              <div className="flex-1">
+                <p className="text-gray-900 font-medium leading-relaxed">{q.question_text}</p>
+                <span className={`inline-block mt-1.5 text-xs font-medium px-2 py-0.5 rounded-full ${
+                  q.question_type === 'essay' ? 'bg-accent/10 text-accent' : 'bg-primary/10 text-primary'
+                }`}>
+                  {q.question_type === 'essay' ? '✍️ Tự luận' : '○ Trắc nghiệm'}
+                </span>
+              </div>
             </div>
 
-            <div className="space-y-2.5">
-              {q.options.map((opt, i) => {
-                const selected = answers[currentQ] === i
-                return (
-                  <button
-                    key={i}
-                    onClick={() => setAnswers((prev) => { const n = [...prev]; n[currentQ] = i; return n })}
-                    className={`w-full flex items-start gap-3 px-4 py-3.5 rounded-input border text-left transition-all focus-visible:ring-2 focus-visible:ring-primary/50 ${
-                      selected
-                        ? 'border-primary bg-primary/8 shadow-sm'
-                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                    }`}
-                  >
-                    <span className={`flex-shrink-0 h-6 w-6 rounded-full border-2 flex items-center justify-center text-xs font-bold mt-0.5 transition-colors ${
-                      selected ? 'border-primary bg-primary text-white' : 'border-gray-300 text-gray-500'
-                    }`}>
-                      {OPTS[i]}
-                    </span>
-                    <span className={`text-sm leading-relaxed ${selected ? 'text-primary font-medium' : 'text-gray-700'}`}>
-                      {opt}
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
+            {q.question_type === 'essay' ? (
+              <textarea
+                value={typeof answers[currentQ] === 'string' ? (answers[currentQ] as string) : ''}
+                onChange={(e) => setAnswers((prev) => { const n = [...prev]; n[currentQ] = e.target.value; return n })}
+                placeholder="Nhập câu trả lời của con ở đây..."
+                rows={7}
+                className="w-full border border-gray-200 rounded-input px-4 py-3 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors resize-y"
+              />
+            ) : (
+              <div className="space-y-2.5">
+                {q.options.map((opt, i) => {
+                  const selected = answers[currentQ] === i
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => setAnswers((prev) => { const n = [...prev]; n[currentQ] = i; return n })}
+                      className={`w-full flex items-start gap-3 px-4 py-3.5 rounded-input border text-left transition-all focus-visible:ring-2 focus-visible:ring-primary/50 ${
+                        selected
+                          ? 'border-primary bg-primary/8 shadow-sm'
+                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      <span className={`flex-shrink-0 h-6 w-6 rounded-full border-2 flex items-center justify-center text-xs font-bold mt-0.5 transition-colors ${
+                        selected ? 'border-primary bg-primary text-white' : 'border-gray-300 text-gray-500'
+                      }`}>
+                        {OPTS[i]}
+                      </span>
+                      <span className={`text-sm leading-relaxed ${selected ? 'text-primary font-medium' : 'text-gray-700'}`}>
+                        {opt}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
           {/* Navigation */}
@@ -383,7 +424,7 @@ export default function ParentQuizAttemptPage({ params }: { params: { id: string
                 aria-label={`Câu ${i + 1}`}
                 className={`h-2.5 rounded-full transition-all ${
                   i === currentQ        ? 'bg-primary w-5' :
-                  answers[i] !== null   ? 'bg-primary/40 w-2.5' :
+                  isAnswered(answers[i]) ? 'bg-primary/40 w-2.5' :
                   'bg-gray-200 w-2.5'
                 }`}
               />
@@ -398,7 +439,8 @@ export default function ParentQuizAttemptPage({ params }: { params: { id: string
   if (pageState === 'results' && result) {
     const pct          = Math.round((result.score / result.max_score) * 100)
     const passed       = pct >= 50
-    const finalAnswers = answers.map((a) => a ?? 0)
+    const finalAnswers = answers
+    const details      = result.details
 
     return (
       <div className="flex flex-col min-h-full">
@@ -419,10 +461,13 @@ export default function ParentQuizAttemptPage({ params }: { params: { id: string
               {passed ? '🎉 Đạt yêu cầu!' : '📚 Cần ôn tập thêm'}
             </p>
             <div className="flex justify-center gap-6 text-sm text-gray-600">
-              <span>Đúng: <strong className="text-success">{result.score}</strong>/{result.max_score}</span>
+              <span>Điểm: <strong className="text-success">{result.score}</strong>/{result.max_score}</span>
               <span>·</span>
               <span>Thời gian: <strong>{formatTime(result.time_taken_seconds)}</strong></span>
             </div>
+            {details?.some((d) => d.type === 'essay') && (
+              <p className="text-xs text-gray-400 mt-2">Câu tự luận được AI chấm tự động — giáo viên có thể xem lại.</p>
+            )}
           </div>
 
           {/* Answer review */}
@@ -433,7 +478,46 @@ export default function ParentQuizAttemptPage({ params }: { params: { id: string
             <div className="divide-y divide-gray-50">
               {quiz.questions.map((q, idx) => {
                 const userAns = finalAnswers[idx]
-                const isRight = userAns === q.correct_index
+                const detail  = details?.[idx]
+
+                // ── Câu tự luận ──
+                if (q.question_type === 'essay') {
+                  const essayScore = detail?.score
+                  return (
+                    <div key={q.id} className="p-4">
+                      <div className="flex items-start gap-2.5 mb-3">
+                        <span className="flex-shrink-0 h-5 w-5 rounded-full flex items-center justify-center text-xs font-bold mt-0.5 bg-accent/10 text-accent">✍️</span>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-gray-900 leading-relaxed">{q.question_text}</p>
+                          {essayScore != null && (
+                            <span className="inline-block mt-1 text-xs font-semibold text-accent">
+                              Điểm: {essayScore}/{detail?.max ?? 10}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="ml-7.5 space-y-1.5">
+                        <div className="px-3 py-2 bg-gray-50 border border-gray-100 rounded-input text-xs text-gray-700">
+                          <span className="font-semibold text-gray-500">Bài làm: </span>
+                          {typeof userAns === 'string' && userAns.trim() ? userAns : <em className="text-gray-400">(không trả lời)</em>}
+                        </div>
+                        {detail?.feedback && (
+                          <div className="px-3 py-2 bg-accent/5 border border-accent/15 rounded-input text-xs text-gray-700">
+                            <span className="font-semibold text-accent">Nhận xét AI: </span>{detail.feedback}
+                          </div>
+                        )}
+                        {q.sample_answer && (
+                          <div className="px-3 py-2 bg-success/5 border border-success/15 rounded-input text-xs text-gray-700">
+                            <span className="font-semibold text-success">Đáp án mẫu: </span>{q.sample_answer}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )
+                }
+
+                // ── Câu trắc nghiệm ──
+                const isRight = detail?.correct ?? (userAns === q.correct_index)
                 return (
                   <div key={q.id} className="p-4">
                     <div className="flex items-start gap-2.5 mb-3">

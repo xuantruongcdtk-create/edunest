@@ -134,7 +134,7 @@ function UploadModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
             }`}>
               <input
                 type="file"
-                accept=".xlsx,.xls,.docx"
+                accept=".xlsx,.xls,.docx,.pdf"
                 onChange={handleFileChange}
                 className="hidden"
               />
@@ -147,8 +147,8 @@ function UploadModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
               ) : (
                 <div className="text-center">
                   <span className="text-3xl text-gray-300">📂</span>
-                  <p className="mt-2 text-sm text-gray-600 font-medium">Chọn file Excel hoặc Word</p>
-                  <p className="text-xs text-gray-400 mt-1">Hỗ trợ: .xlsx, .xls, .docx (tối đa 10MB)</p>
+                  <p className="mt-2 text-sm text-gray-600 font-medium">Chọn file Excel, Word hoặc PDF</p>
+                  <p className="text-xs text-gray-400 mt-1">Hỗ trợ: .xlsx, .xls, .docx, .pdf (tối đa 10MB)</p>
                 </div>
               )}
             </label>
@@ -239,6 +239,7 @@ function GenerateModal({ onClose, onCreated }: { onClose: () => void; onCreated:
   const [grade,      setGrade]      = useState(10)
   const [difficulty, setDifficulty] = useState<'easy'|'medium'|'hard'>('medium')
   const [count,      setCount]      = useState(10)
+  const [essayCount, setEssayCount] = useState(0)
   const [timeLimit,  setTimeLimit]  = useState(15)
   const [topic,      setTopic]      = useState('')
   const [loading,    setLoading]    = useState(false)
@@ -255,6 +256,7 @@ function GenerateModal({ onClose, onCreated }: { onClose: () => void; onCreated:
         body:    JSON.stringify({
           subject, grade, difficulty,
           questionCount:    count,
+          essayCount,
           timeLimitMinutes: timeLimit,
           topic:            topic.trim() || undefined,
         }),
@@ -343,12 +345,30 @@ function GenerateModal({ onClose, onCreated }: { onClose: () => void; onCreated:
           <div className="grid grid-cols-2 gap-4">
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="text-sm font-medium text-gray-700">Số câu</label>
+                <label className="text-sm font-medium text-gray-700">Câu trắc nghiệm</label>
                 <span className="text-sm font-bold text-primary">{count}</span>
               </div>
-              <input type="range" min={5} max={20} step={1} value={count} onChange={(e) => setCount(Number(e.target.value))}
+              <input type="range" min={0} max={20} step={1} value={count} onChange={(e) => setCount(Number(e.target.value))}
                 className="w-full accent-primary" />
-              <div className="flex justify-between text-xs text-gray-400 mt-1"><span>5</span><span>20</span></div>
+              <div className="flex justify-between text-xs text-gray-400 mt-1"><span>0</span><span>20</span></div>
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-sm font-medium text-gray-700">Câu tự luận</label>
+                <span className="text-sm font-bold text-accent">{essayCount}</span>
+              </div>
+              <input type="range" min={0} max={10} step={1} value={essayCount} onChange={(e) => setEssayCount(Number(e.target.value))}
+                className="w-full accent-[#534AB7]" />
+              <div className="flex justify-between text-xs text-gray-400 mt-1"><span>0</span><span>10</span></div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-2 -mt-2">
+              <p className="text-xs text-gray-400">
+                Tổng <strong className="text-gray-600">{count + essayCount}</strong> câu
+                {essayCount > 0 && ' · câu tự luận sẽ được AI chấm tự động khi học sinh nộp'}
+              </p>
             </div>
             <div>
               <div className="flex items-center justify-between mb-1.5">

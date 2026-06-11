@@ -6,7 +6,8 @@ import { z } from 'zod'
 const AttemptSchema = z.object({
   quizId:           z.string().uuid(),
   childId:          z.string().uuid().optional(),
-  answers:          z.array(z.number().int().min(0)).min(1),
+  // số = đáp án trắc nghiệm (index); chuỗi = bài làm tự luận
+  answers:          z.array(z.union([z.number().int().min(0), z.string()])).min(1),
   timeTakenSeconds: z.number().int().min(0),
 })
 

@@ -76,6 +76,24 @@ export async function generateText(
 }
 
 /**
+ * Generate text from a file (PDF, image…) + prompt — Gemini reads the file directly.
+ * `base64Data` is the file bytes base64-encoded (no data: prefix).
+ */
+export async function generateFromFile(
+  base64Data: string,
+  mimeType: string,
+  prompt: string,
+  modelId: typeof AI_MODEL | typeof AI_MODEL_PRO = AI_MODEL,
+): Promise<string> {
+  const model  = getModel(modelId)
+  const result = await model.generateContent([
+    { inlineData: { data: base64Data, mimeType } },
+    { text: prompt },
+  ])
+  return result.response.text()
+}
+
+/**
  * Streaming chat — for AI coach real-time replies.
  * Returns a Gemini stream; caller iterates with `for await (const chunk of stream.stream)`.
  */

@@ -1,12 +1,14 @@
 import { getServerClient } from '@edunest/db'
-import { generateText, AI_MODEL } from '@edunest/ai'
+import { generateText, generateFromFile, AI_MODEL } from '@edunest/ai'
 import { ok, withHandler, UnauthorizedError, ValidationError } from '@edunest/core'
 import * as XLSX from 'xlsx'
 
 interface ParsedQuestion {
+  question_type: 'mcq' | 'essay'
   question_text: string
   options: string[]
-  correct_index: number
+  correct_index: number | null
+  sample_answer: string | null
   explanation: string | null
 }
 
@@ -20,6 +22,33 @@ function parseCorrectIndex(raw: unknown): number {
   if (!isNaN(n) && n >= 0 && n <= 3) return n
   return 0
 }
+
+function isEssayType(raw: unknown): boolean {
+  const s = String(raw ?? '').trim().toLowerCase()
+  return s.includes('tự luận') || s.includes('tu luan') || s === 'essay' || s === 'tl'
+}
+
+// Chuẩn hoá câu hỏi do AI trả về (Word/PDF) về đúng shape ParsedQuestion
+function normalizeAIQuestions(arr: any[]): ParsedQuestion[] {
+  return (arr ?? []).map((q): ParsedQuestion => {
+    const essay = q.question_type === 'essay' || (!q.options || q.options.length < 2)
+    return {
+      question_type: essay ? 'essay' : 'mcq',
+      question_text: String(q.question_text ?? '').trim(),
+      options:       essay ? [] : (q.options ?? []),
+      correct_index: essay ? null : (typeof q.correct_index === 'number' ? q.correct_index : 0),
+      sample_answer: essay ? (q.sample_answer ?? q.explanation ?? null) : null,
+      explanation:   q.explanation ?? null,
+    }
+  }).filter((q) => q.question_text)
+}
+
+const AI_PARSE_INSTRUCTION = `Trích xuất TẤT CẢ câu hỏi (cả trắc nghiệm và tự luận). Trả về JSON hợp lệ, KHÔNG kèm chữ nào khác:
+{"title":"tên bài","questions":[
+  {"question_type":"mcq","question_text":"...","options":["A. ...","B. ...","C. ...","D. ..."],"correct_index":0,"explanation":null},
+  {"question_type":"essay","question_text":"...","sample_answer":"đáp án mẫu/tiêu chí chấm","explanation":null}
+]}
+correct_index là 0-3 (0=A). Câu không có lựa chọn A/B/C/D thì là "essay" và phải có sample_answer.`
 
 function parseExcel(buffer: ArrayBuffer): { title: string; questions: ParsedQuestion[] } {
   const workbook = XLSX.read(buffer, { type: 'buffer' })
@@ -36,21 +65,37 @@ function parseExcel(buffer: ArrayBuffer): { title: string; questions: ParsedQues
     ).trim()
     if (!questionText) continue
 
+    const typeRaw = row['Loại'] ?? row['Loại câu'] ?? row['type'] ?? row['LOẠI']
+    const answerRaw = row['Đáp án'] ?? row['correct_index'] ?? row['Answer'] ?? row['ĐÁP ÁN'] ?? 'A'
+    const explanation = String(row['Giải thích'] ?? row['explanation'] ?? row['GIẢI THÍCH'] ?? '').trim() || null
+
     const optA = String(row['A'] ?? row['Lựa chọn A'] ?? row['option_a'] ?? row['LỰA CHỌN A'] ?? '').trim()
     const optB = String(row['B'] ?? row['Lựa chọn B'] ?? row['option_b'] ?? row['LỰA CHỌN B'] ?? '').trim()
     const optC = String(row['C'] ?? row['Lựa chọn C'] ?? row['option_c'] ?? row['LỰA CHỌN C'] ?? '').trim()
     const optD = String(row['D'] ?? row['Lựa chọn D'] ?? row['option_d'] ?? row['LỰA CHỌN D'] ?? '').trim()
-
     const options = [optA, optB, optC, optD].filter(Boolean)
-    if (options.length < 2) continue
 
-    const answerRaw   = row['Đáp án'] ?? row['correct_index'] ?? row['Answer'] ?? row['ĐÁP ÁN'] ?? 'A'
-    const explanation = String(row['Giải thích'] ?? row['explanation'] ?? row['GIẢI THÍCH'] ?? '').trim() || null
+    // Tự luận: cột "Loại" = tự luận, HOẶC không có đủ lựa chọn
+    if (isEssayType(typeRaw) || options.length < 2) {
+      // Đáp án mẫu lấy từ cột "Đáp án mẫu"/"Đáp án"/"Giải thích"
+      const sample = String(row['Đáp án mẫu'] ?? row['sample_answer'] ?? answerRaw ?? '').trim() || explanation
+      questions.push({
+        question_type: 'essay',
+        question_text: questionText,
+        options:       [],
+        correct_index: null,
+        sample_answer: sample || null,
+        explanation,
+      })
+      continue
+    }
 
     questions.push({
+      question_type: 'mcq',
       question_text: questionText,
       options,
       correct_index: parseCorrectIndex(answerRaw),
+      sample_answer: null,
       explanation,
     })
   }
@@ -63,27 +108,33 @@ function parseExcel(buffer: ArrayBuffer): { title: string; questions: ParsedQues
 }
 
 async function parseWord(buffer: ArrayBuffer): Promise<{ title: string; questions: ParsedQuestion[] }> {
-  // Dynamic import to avoid edge runtime issues
   const mammoth = await import('mammoth')
   const { value: text } = await mammoth.default.extractRawText({ buffer: Buffer.from(buffer) })
 
   if (!text.trim()) throw new ValidationError('File Word không có nội dung')
 
-  const prompt = `Phân tích văn bản sau và trích xuất tất cả câu hỏi trắc nghiệm. Trả về JSON hợp lệ với cấu trúc:
-{"title": "tên bài kiểm tra", "questions": [{"question_text": "nội dung câu hỏi", "options": ["A. lựa chọn 1", "B. lựa chọn 2", "C. lựa chọn 3", "D. lựa chọn 4"], "correct_index": 0, "explanation": null}]}
-Trong đó correct_index là chỉ số 0-3 (0=A, 1=B, 2=C, 3=D). Chỉ trả về JSON, không giải thích thêm.
-
-Văn bản:
-${text.slice(0, 8000)}`
-
-  const raw   = await generateText(prompt, AI_MODEL)
+  const raw   = await generateText(`${AI_PARSE_INSTRUCTION}\n\nVăn bản:\n${text.slice(0, 8000)}`, AI_MODEL)
   const match = raw.match(/\{[\s\S]*\}/)
   if (!match) throw new ValidationError('Không thể phân tích nội dung file Word. Kiểm tra format câu hỏi.')
 
-  const parsed = JSON.parse(match[0]) as { title?: string; questions?: ParsedQuestion[] }
+  const parsed = JSON.parse(match[0]) as { title?: string; questions?: any[] }
   return {
     title:     parsed.title ?? 'Bài kiểm tra từ file',
-    questions: parsed.questions ?? [],
+    questions: normalizeAIQuestions(parsed.questions ?? []),
+  }
+}
+
+async function parsePdf(buffer: ArrayBuffer): Promise<{ title: string; questions: ParsedQuestion[] }> {
+  // Gemini đọc trực tiếp file PDF (không cần thư viện tách text)
+  const base64 = Buffer.from(buffer).toString('base64')
+  const raw    = await generateFromFile(base64, 'application/pdf', AI_PARSE_INSTRUCTION, AI_MODEL)
+  const match  = raw.match(/\{[\s\S]*\}/)
+  if (!match) throw new ValidationError('Không thể phân tích nội dung file PDF. Kiểm tra lại file.')
+
+  const parsed = JSON.parse(match[0]) as { title?: string; questions?: any[] }
+  return {
+    title:     parsed.title ?? 'Bài kiểm tra từ file',
+    questions: normalizeAIQuestions(parsed.questions ?? []),
   }
 }
 
@@ -120,8 +171,10 @@ export const POST = withHandler(async (req) => {
     parsed = parseExcel(buffer)
   } else if (fileName.endsWith('.docx')) {
     parsed = await parseWord(buffer)
+  } else if (fileName.endsWith('.pdf')) {
+    parsed = await parsePdf(buffer)
   } else {
-    throw new ValidationError('Chỉ hỗ trợ file .xlsx, .xls, .docx')
+    throw new ValidationError('Chỉ hỗ trợ file .xlsx, .xls, .docx, .pdf')
   }
 
   if (parsed.questions.length === 0) {
@@ -153,8 +206,10 @@ export const POST = withHandler(async (req) => {
   const rows = parsed.questions.map((q, i) => ({
     quiz_id:       (quiz as { id: string }).id,
     question_text: q.question_text,
+    question_type: q.question_type,
     options:       q.options,
-    correct_index: q.correct_index,
+    correct_index: q.question_type === 'essay' ? null : (q.correct_index ?? 0),
+    sample_answer: q.sample_answer,
     explanation:   q.explanation,
     order_index:   i,
   }))

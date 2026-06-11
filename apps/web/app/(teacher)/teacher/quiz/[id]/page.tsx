@@ -8,8 +8,10 @@ import { getBrowserClient }                  from '../../../../../lib/supabase'
 interface Question {
   id:            string
   question_text: string
+  question_type: 'mcq' | 'essay'
   options:       string[]
-  correct_index: number
+  correct_index: number | null
+  sample_answer: string | null
   explanation:   string | null
   order_index:   number
 }
@@ -98,7 +100,7 @@ export default function QuizDetailPage({ params }: { params: { id: string } }) {
 
         const { data: questions } = await sb
           .from('quiz_questions')
-          .select('id, question_text, options, correct_index, explanation, order_index')
+          .select('id, question_text, question_type, options, correct_index, sample_answer, explanation, order_index')
           .eq('quiz_id', id)
           .order('order_index', { ascending: true })
 
@@ -512,7 +514,14 @@ export default function QuizDetailPage({ params }: { params: { id: string } }) {
 
                     {expanded && (
                       <div className="mt-3 ml-11 space-y-2 animate-fade-in">
-                        {q.options.map((opt, i) => {
+                        {q.question_type === 'essay' ? (
+                          <div className="px-3 py-2.5 bg-success/6 border border-success/20 rounded-input">
+                            <p className="text-xs font-semibold text-success mb-1">✍️ Tự luận — Đáp án mẫu / tiêu chí chấm</p>
+                            <p className="text-sm text-gray-700 leading-relaxed">
+                              {q.sample_answer || <em className="text-gray-400">Chưa có đáp án mẫu</em>}
+                            </p>
+                          </div>
+                        ) : q.options.map((opt, i) => {
                           const isCorrect = i === q.correct_index
                           return (
                             <div key={i} className={`flex items-start gap-2.5 px-3 py-2 rounded-input text-sm ${

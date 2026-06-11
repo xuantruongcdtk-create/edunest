@@ -1,6 +1,7 @@
 export {
   getModel,
   generateText,
+  generateFromFile,
   createCoachStream,
   checkAIRateLimit,
   AI_MODEL,
