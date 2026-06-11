@@ -1,19 +1,52 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
+import { getBrowserClient } from '../../lib/supabase'
 
-const STEPS = [
-  { n: 1, label: 'Cá nhân',  path: '/onboarding/step-1' },
-  { n: 2, label: 'Thêm con', path: '/onboarding/step-2' },
-  { n: 3, label: 'Mục tiêu', path: '/onboarding/step-3' },
-  { n: 4, label: 'Hoàn tất', path: '/onboarding/step-4' },
-]
+interface Step { n: number; label: string; path: string }
+
+// Phụ huynh / Giáo viên: 4 bước. BGH: 3 bước (bỏ "Mục tiêu", nhảy thẳng tới Hoàn tất).
+const STEPS_BY_ROLE: Record<string, Step[]> = {
+  parent: [
+    { n: 1, label: 'Cá nhân',  path: '/onboarding/step-1' },
+    { n: 2, label: 'Thêm con', path: '/onboarding/step-2' },
+    { n: 3, label: 'Mục tiêu', path: '/onboarding/step-3' },
+    { n: 4, label: 'Hoàn tất', path: '/onboarding/step-4' },
+  ],
+  teacher: [
+    { n: 1, label: 'Cá nhân',  path: '/onboarding/step-1' },
+    { n: 2, label: 'Giảng dạy', path: '/onboarding/step-2' },
+    { n: 3, label: 'Mục tiêu', path: '/onboarding/step-3' },
+    { n: 4, label: 'Hoàn tất', path: '/onboarding/step-4' },
+  ],
+  bgh: [
+    { n: 1, label: 'Cá nhân',   path: '/onboarding/step-1' },
+    { n: 2, label: 'Trường học', path: '/onboarding/step-2' },
+    { n: 3, label: 'Hoàn tất',  path: '/onboarding/step-4' },
+  ],
+}
 
 export default function OnboardingLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname()
-  const current  = STEPS.findIndex((s) => pathname.startsWith(s.path)) + 1
+  const [role, setRole] = useState<string>('parent')
+
+  useEffect(() => {
+    async function loadRole() {
+      const sb = getBrowserClient()
+      const { data: { user } } = await sb.auth.getUser()
+      if (!user) return
+      const { data } = await sb.from('profiles').select('role').eq('id', user.id).single()
+      const r = (data as { role: string } | null)?.role ?? user.user_metadata?.role ?? 'parent'
+      setRole(r)
+    }
+    loadRole()
+  }, [])
+
+  const STEPS   = STEPS_BY_ROLE[role] ?? STEPS_BY_ROLE.parent
+  const current = STEPS.findIndex((s) => pathname.startsWith(s.path)) + 1
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-white to-accent/5 flex flex-col items-center justify-center p-4">
