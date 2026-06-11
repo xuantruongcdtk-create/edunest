@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { getBrowserClient } from '../../lib/supabase'
 
-type Role = 'parent' | 'teacher'
+type Role = 'parent' | 'teacher' | 'bgh'
 
 function PasswordStrength({ password }: { password: string }) {
   const checks = [
@@ -173,22 +173,23 @@ export function RegisterForm() {
         {/* Role picker */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Bạn là</label>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             {([
-              { value: 'parent',  label: 'Phụ huynh', icon: '👨‍👩‍👧' },
-              { value: 'teacher', label: 'Giáo viên', icon: '👩‍🏫' },
+              { value: 'parent',  label: 'Phụ huynh',     icon: '👨‍👩‍👧' },
+              { value: 'teacher', label: 'Giáo viên',     icon: '👩‍🏫' },
+              { value: 'bgh',     label: 'Ban giám hiệu', icon: '🏫' },
             ] as { value: Role; label: string; icon: string }[]).map(({ value, label, icon }) => (
               <button
                 key={value}
                 type="button"
                 onClick={() => setRole(value)}
-                className={`flex items-center justify-center gap-2 py-2.5 rounded-input border text-sm font-medium transition-colors ${
+                className={`flex flex-col items-center justify-center gap-1 py-2.5 px-1 rounded-input border text-xs font-medium text-center transition-colors ${
                   role === value
                     ? 'border-primary bg-primary/8 text-primary'
                     : 'border-gray-200 text-gray-600 hover:border-gray-300'
                 }`}
               >
-                <span>{icon}</span>
+                <span className="text-base">{icon}</span>
                 {label}
               </button>
             ))}

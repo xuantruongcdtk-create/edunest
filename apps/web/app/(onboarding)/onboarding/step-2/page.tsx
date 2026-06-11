@@ -33,6 +33,9 @@ export default function OnboardingStep2() {
   // Teacher fields
   const [subject,     setSubject]     = useState('math')
   const [schoolName,  setSchoolName]  = useState('')
+  // BGH fields
+  const [province,    setProvince]    = useState('Hà Nội')
+  const [district,    setDistrict]    = useState('')
 
   useEffect(() => {
     async function loadRole() {
@@ -72,6 +75,8 @@ export default function OnboardingStep2() {
     if (role === 'parent') {
       const valid = children.every((c) => c.name.trim())
       if (!valid) { setError('Vui lòng nhập tên cho tất cả học sinh.'); return }
+    } else if (role === 'bgh') {
+      if (!schoolName.trim()) { setError('Vui lòng nhập tên trường.'); return }
     } else {
       if (!subject) { setError('Vui lòng chọn môn dạy.'); return }
     }
@@ -89,6 +94,28 @@ export default function OnboardingStep2() {
 
       const { error: insErr } = await sb.from('children').insert(rows)
       if (insErr) { setError('Không thể lưu thông tin. Thử lại nhé.'); setLoading(false); return }
+    } else if (role === 'bgh') {
+      // Tạo trường + liên kết vào profile (BGH dashboard cần school_id)
+      const { data: school, error: schoolErr } = await (sb as any)
+        .from('schools')
+        .insert({
+          name:     schoolName.trim(),
+          province: province.trim() || 'Hà Nội',
+          district: district.trim() || null,
+        })
+        .select('id')
+        .single()
+
+      if (schoolErr || !school) {
+        setError('Không thể tạo trường. Thử lại nhé.'); setLoading(false); return
+      }
+
+      const { error: linkErr } = await sb
+        .from('profiles')
+        .update({ school_id: (school as { id: string }).id })
+        .eq('id', user.id)
+
+      if (linkErr) { setError('Không thể liên kết trường. Thử lại nhé.'); setLoading(false); return }
     } else {
       // Store teacher's primary subject + school in auth user_metadata
       // profiles has no dedicated subject column — user_metadata is correct for onboarding data
@@ -102,7 +129,8 @@ export default function OnboardingStep2() {
     }
 
     setLoading(false)
-    router.push('/onboarding/step-3')
+    // BGH không cần bước đặt mục tiêu học tập (dành cho phụ huynh) → tới luôn bước hoàn tất
+    router.push(role === 'bgh' ? '/onboarding/step-4' : '/onboarding/step-3')
   }
 
   if (fetching) {
@@ -117,18 +145,28 @@ export default function OnboardingStep2() {
     )
   }
 
-  const isTeacher = role === 'teacher' || role === 'bgh'
+  const isTeacher = role === 'teacher'
+  const isBgh     = role === 'bgh'
+
+  const heading = isBgh
+    ? 'Thông tin trường học'
+    : isTeacher
+      ? 'Thông tin giảng dạy'
+      : 'Thêm học sinh'
+  const subheading = isBgh
+    ? 'Tạo hồ sơ trường để quản lý lớp và theo dõi toàn trường.'
+    : isTeacher
+      ? 'Cho chúng tôi biết bạn dạy môn gì và ở trường nào.'
+      : 'Thêm thông tin con để bắt đầu theo dõi việc học.'
 
   return (
     <div className="p-8">
       <div className="mb-6">
         <h1 className="font-display font-extrabold text-2xl text-gray-900 mb-1">
-          {isTeacher ? 'Thông tin giảng dạy' : 'Thêm học sinh'}
+          {heading}
         </h1>
         <p className="text-sm text-gray-500">
-          {isTeacher
-            ? 'Cho chúng tôi biết bạn dạy môn gì và ở trường nào.'
-            : 'Thêm thông tin con để bắt đầu theo dõi việc học.'}
+          {subheading}
         </p>
       </div>
 
@@ -139,7 +177,49 @@ export default function OnboardingStep2() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {isTeacher ? (
+        {isBgh ? (
+          <>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Tên trường <span className="text-danger">*</span>
+              </label>
+              <input
+                type="text"
+                value={schoolName}
+                onChange={(e) => setSchoolName(e.target.value)}
+                required
+                placeholder="THPT Chu Văn An"
+                className="w-full border border-gray-200 rounded-input px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Tỉnh / Thành phố
+                </label>
+                <input
+                  type="text"
+                  value={province}
+                  onChange={(e) => setProvince(e.target.value)}
+                  placeholder="Hà Nội"
+                  className="w-full border border-gray-200 rounded-input px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Quận / Huyện <span className="text-gray-400 font-normal">(tuỳ chọn)</span>
+                </label>
+                <input
+                  type="text"
+                  value={district}
+                  onChange={(e) => setDistrict(e.target.value)}
+                  placeholder="Cầu Giấy"
+                  className="w-full border border-gray-200 rounded-input px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                />
+              </div>
+            </div>
+          </>
+        ) : isTeacher ? (
           <>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
