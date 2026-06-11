@@ -1,5 +1,5 @@
 import { getServerClient } from '@edunest/db'
-import { ok, created, noContent, withHandler, UnauthorizedError, ValidationError } from '@edunest/core'
+import { ok, created, withHandler, UnauthorizedError, ValidationError } from '@edunest/core'
 import { z } from 'zod'
 
 const AssignSchema = z.object({
@@ -88,6 +88,6 @@ export function DELETE(req: Request, { params }: { params: { id: string } }) {
       .eq('assigned_by', user.id)
 
     if (error) throw new Error(error.message)
-    return noContent()
+    return ok({ deleted: true })
   })(req)
 }
