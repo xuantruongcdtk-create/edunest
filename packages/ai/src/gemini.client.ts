@@ -14,9 +14,9 @@ import { RateLimitError } from '@edunest/core'
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY ?? '')
 
 /** Primary model for AI coaching and quiz generation. */
-export const AI_MODEL    = 'gemini-2.0-flash' as const
+export const AI_MODEL    = 'gemini-3.5-flash' as const
 /** Higher-quality model for weekly summaries and insight generation. */
-export const AI_MODEL_PRO = 'gemini-2.0-flash' as const
+export const AI_MODEL_PRO = 'gemini-3.5-flash' as const
 
 const SAFETY_SETTINGS = [
   { category: HarmCategory.HARM_CATEGORY_HARASSMENT,        threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
