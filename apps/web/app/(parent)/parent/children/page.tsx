@@ -54,7 +54,7 @@ export default function ChildrenPage() {
   const [formDOB,    setFormDOB]    = useState('')
   const [formSchool, setFormSchool] = useState('')
 
-  useEffect(() => { loadChildren() }, [])
+  useEffect(() => { if (userId) loadChildren() }, [userId])
 
   async function loadChildren() {
     setLoading(true)
