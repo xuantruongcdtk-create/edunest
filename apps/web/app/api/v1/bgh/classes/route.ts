@@ -9,6 +9,13 @@ const CreateClassSchema = z.object({
   academicYear: z.string().min(1).max(20).default('2025-2026'),
 })
 
+function generateJoinCode(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+  const bytes = new Uint8Array(6)
+  crypto.getRandomValues(bytes)
+  return Array.from(bytes).map((b) => chars[b % chars.length]).join('')
+}
+
 export const POST = withHandler(async (req) => {
   const db = await getServerClient()
   const { data: { user } } = await db.auth.getUser()
@@ -37,6 +44,7 @@ export const POST = withHandler(async (req) => {
       name:          parsed.data.name.trim(),
       grade:         parsed.data.grade,
       academic_year: parsed.data.academicYear,
+      join_code:     generateJoinCode(),
     })
     .select('id, name, grade, student_count')
     .single()
