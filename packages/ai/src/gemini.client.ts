@@ -88,7 +88,7 @@ export async function createCoachStream(
 
   const chat = model.startChat({
     history,
-    systemInstruction,
+    systemInstruction: { role: 'user', parts: [{ text: systemInstruction }] },
     generationConfig: { maxOutputTokens: 1024 },
   })
 
