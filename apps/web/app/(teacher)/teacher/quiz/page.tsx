@@ -47,6 +47,192 @@ const STATUS_CONFIG = {
 
 const SUBJ_LABEL = Object.fromEntries(SUBJECTS.map((s) => [s.value, s.label]))
 
+// ─── Upload File Modal ───────────────────────────────────────────────────────
+function UploadModal({ onClose, onCreated }: { onClose: () => void; onCreated: (q: Quiz) => void }) {
+  const [file,       setFile]       = useState<File | null>(null)
+  const [title,      setTitle]      = useState('')
+  const [subject,    setSubject]    = useState('math')
+  const [grade,      setGrade]      = useState(10)
+  const [difficulty, setDifficulty] = useState<'easy'|'medium'|'hard'>('medium')
+  const [timeLimit,  setTimeLimit]  = useState(15)
+  const [loading,    setLoading]    = useState(false)
+  const [error,      setError]      = useState<string | null>(null)
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0] ?? null
+    setFile(f)
+    if (f && !title) {
+      const name = f.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ')
+      setTitle(name)
+    }
+  }
+
+  async function handleUpload(e: React.FormEvent) {
+    e.preventDefault()
+    if (!file) { setError('Vui lòng chọn file'); return }
+
+    setLoading(true); setError(null)
+
+    const fd = new FormData()
+    fd.append('file',             file)
+    fd.append('subject',          subject)
+    fd.append('grade',            String(grade))
+    fd.append('difficulty',       difficulty)
+    fd.append('timeLimitMinutes', String(timeLimit))
+    if (title.trim()) fd.append('title', title.trim())
+
+    try {
+      const res = await fetch('/api/v1/quiz/upload', { method: 'POST', body: fd })
+
+      if (!res.ok) {
+        const err        = await res.json().catch(() => ({}))
+        const errPayload = (err as { error?: string | { message?: string } }).error
+        setError(
+          typeof errPayload === 'string'
+            ? errPayload
+            : (errPayload as { message?: string } | undefined)?.message ?? 'Upload thất bại, thử lại sau.',
+        )
+        return
+      }
+
+      const data = (await res.json()) as { data: Quiz }
+      onCreated(data.data)
+    } catch {
+      setError('Không kết nối được server. Kiểm tra mạng và thử lại.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fileExt = file?.name.toLowerCase().split('.').pop()
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white rounded-card shadow-2xl w-full max-w-lg animate-slide-up max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 sticky top-0 bg-white z-10">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-full bg-accent/10 flex items-center justify-center text-xl">📁</div>
+            <div>
+              <h2 className="font-display font-bold text-gray-900">Upload từ file</h2>
+              <p className="text-xs text-gray-400">Nhập câu hỏi từ Excel hoặc Word</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-700 text-xl leading-none">×</button>
+        </div>
+
+        <form onSubmit={handleUpload} className="p-6 space-y-5">
+          {error && (
+            <div className="bg-danger/8 border border-danger/20 text-danger text-sm rounded-input px-3 py-2.5">{error}</div>
+          )}
+
+          {/* File picker */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">File câu hỏi</label>
+            <label className={`flex flex-col items-center justify-center border-2 border-dashed rounded-card p-6 cursor-pointer transition-colors ${
+              file ? 'border-primary/40 bg-primary/4' : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+            }`}>
+              <input
+                type="file"
+                accept=".xlsx,.xls,.docx"
+                onChange={handleFileChange}
+                className="hidden"
+              />
+              {file ? (
+                <div className="text-center">
+                  <span className="text-3xl">{fileExt === 'docx' ? '📄' : '📊'}</span>
+                  <p className="mt-2 text-sm font-medium text-primary">{file.name}</p>
+                  <p className="text-xs text-gray-400">{(file.size / 1024).toFixed(0)} KB — nhấn để đổi file</p>
+                </div>
+              ) : (
+                <div className="text-center">
+                  <span className="text-3xl text-gray-300">📂</span>
+                  <p className="mt-2 text-sm text-gray-600 font-medium">Chọn file Excel hoặc Word</p>
+                  <p className="text-xs text-gray-400 mt-1">Hỗ trợ: .xlsx, .xls, .docx (tối đa 10MB)</p>
+                </div>
+              )}
+            </label>
+          </div>
+
+          {/* Format guide */}
+          <div className="bg-gray-50 rounded-input px-4 py-3 text-xs text-gray-600 space-y-1">
+            <p className="font-semibold text-gray-700 mb-1.5">Format Excel (các cột):</p>
+            <p><span className="font-mono bg-white px-1 rounded border border-gray-200">Câu hỏi</span> · <span className="font-mono bg-white px-1 rounded border border-gray-200">A</span> · <span className="font-mono bg-white px-1 rounded border border-gray-200">B</span> · <span className="font-mono bg-white px-1 rounded border border-gray-200">C</span> · <span className="font-mono bg-white px-1 rounded border border-gray-200">D</span> · <span className="font-mono bg-white px-1 rounded border border-gray-200">Đáp án</span> · <span className="font-mono bg-white px-1 rounded border border-gray-200">Giải thích</span></p>
+            <p>Cột Đáp án điền A/B/C/D hoặc 1/2/3/4</p>
+            <p className="text-gray-400">Word: AI sẽ tự phân tích câu hỏi từ nội dung file</p>
+          </div>
+
+          {/* Title */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Tiêu đề bài kiểm tra</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Tự động từ tên file nếu để trống"
+              className="w-full border border-gray-200 rounded-input px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Môn học</label>
+              <select value={subject} onChange={(e) => setSubject(e.target.value)}
+                className="w-full border border-gray-200 rounded-input px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30">
+                {SUBJECTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Khối lớp</label>
+              <select value={grade} onChange={(e) => setGrade(Number(e.target.value))}
+                className="w-full border border-gray-200 rounded-input px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30">
+                {GRADES.map((g) => <option key={g} value={g}>Lớp {g}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Độ khó</label>
+            <div className="grid grid-cols-3 gap-2">
+              {(['easy','medium','hard'] as const).map((d) => (
+                <button key={d} type="button" onClick={() => setDifficulty(d)}
+                  className={`py-2.5 rounded-input text-sm font-medium border transition-colors ${
+                    difficulty === d ? 'border-primary bg-primary/8 text-primary' : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                  }`}>
+                  {DIFF_CONFIG[d].label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-sm font-medium text-gray-700">Thời gian làm bài</label>
+              <span className="text-sm font-bold text-primary">{timeLimit} phút</span>
+            </div>
+            <input type="range" min={5} max={90} step={5} value={timeLimit}
+              onChange={(e) => setTimeLimit(Number(e.target.value))}
+              className="w-full accent-primary" />
+            <div className="flex justify-between text-xs text-gray-400 mt-1"><span>5ph</span><span>90ph</span></div>
+          </div>
+
+          <button type="submit" disabled={loading || !file}
+            className="w-full bg-accent text-white font-bold text-sm py-3 rounded-btn hover:bg-accent/90 transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
+            {loading ? (
+              <>
+                <span className="h-4 w-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                {fileExt === 'docx' ? 'AI đang phân tích file...' : 'Đang xử lý file...'}
+              </>
+            ) : (
+              <>📁 Tạo bài từ file</>
+            )}
+          </button>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 // ─── AI Generate Modal ───────────────────────────────────────────────────────
 function GenerateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (q: Quiz) => void }) {
   const [subject,    setSubject]    = useState('math')
@@ -76,7 +262,12 @@ function GenerateModal({ onClose, onCreated }: { onClose: () => void; onCreated:
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
-        setError((err as { error?: string }).error ?? 'Tạo bài thất bại, thử lại sau.')
+        const errPayload = (err as { error?: string | { message?: string } }).error
+        setError(
+          typeof errPayload === 'string'
+            ? errPayload
+            : (errPayload as { message?: string } | undefined)?.message ?? 'Tạo bài thất bại, thử lại sau.',
+        )
         return
       }
 
@@ -198,9 +389,10 @@ export default function TeacherQuizPage() {
   const router     = useRouter()
   const { userId } = useUser()
 
-  const [quizzes,     setQuizzes]     = useState<Quiz[]>([])
-  const [loading,     setLoading]     = useState(true)
-  const [showModal,   setShowModal]   = useState(false)
+  const [quizzes,      setQuizzes]      = useState<Quiz[]>([])
+  const [loading,      setLoading]      = useState(true)
+  const [showModal,    setShowModal]    = useState(false)
+  const [showUpload,   setShowUpload]   = useState(false)
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [filterSubject, setFilterSubject] = useState<string>('all')
 
@@ -247,10 +439,16 @@ export default function TeacherQuizPage() {
           <h1 className="font-display font-bold text-xl text-gray-900">Bài kiểm tra</h1>
           <p className="text-sm text-gray-500">Quản lý và tạo bài kiểm tra bằng AI</p>
         </div>
-        <button onClick={() => setShowModal(true)}
-          className="bg-primary text-white text-sm font-semibold px-4 py-2 rounded-btn hover:bg-primary-dark transition-colors flex items-center gap-2">
-          🤖 Tạo bằng AI
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setShowUpload(true)}
+            className="border border-gray-200 text-gray-700 text-sm font-semibold px-4 py-2 rounded-btn hover:bg-gray-50 transition-colors flex items-center gap-2">
+            📁 Upload file
+          </button>
+          <button onClick={() => setShowModal(true)}
+            className="bg-primary text-white text-sm font-semibold px-4 py-2 rounded-btn hover:bg-primary-dark transition-colors flex items-center gap-2">
+            🤖 Tạo bằng AI
+          </button>
+        </div>
       </div>
 
       <div className="p-6 space-y-5">
@@ -369,7 +567,8 @@ export default function TeacherQuizPage() {
         </div>
       </div>
 
-      {showModal && <GenerateModal onClose={() => setShowModal(false)} onCreated={handleCreated} />}
+      {showModal  && <GenerateModal onClose={() => setShowModal(false)}  onCreated={handleCreated} />}
+      {showUpload && <UploadModal  onClose={() => setShowUpload(false)} onCreated={handleCreated} />}
     </div>
   )
 }

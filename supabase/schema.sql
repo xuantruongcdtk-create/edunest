@@ -734,6 +734,21 @@ AS $$
   )
 $$;
 
+CREATE OR REPLACE FUNCTION public.parent_can_access_quiz(p_quiz_id uuid)
+RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM   public.quiz_assignments qa
+    JOIN   public.class_memberships cm ON cm.class_id = qa.class_id
+    JOIN   public.children          c  ON c.id        = cm.child_id
+    WHERE  qa.quiz_id   = p_quiz_id
+    AND    c.parent_id  = auth.uid()
+  )
+$$;
+
 
 -- =============================================================================
 -- ROW LEVEL SECURITY
@@ -873,9 +888,28 @@ CREATE POLICY "quizzes: teacher manage own"
   USING  (teacher_id = auth.uid())
   WITH CHECK (teacher_id = auth.uid());
 
-CREATE POLICY "quizzes: read published"
+-- Phụ huynh chỉ đọc được bài đã giao cho lớp có con họ
+CREATE POLICY "quizzes: parent via assignment"
   ON public.quizzes FOR SELECT
-  USING (status = 'published');
+  USING (
+    status = 'published'
+    AND public.parent_can_access_quiz(id)
+  );
+
+-- BGH xem được tất cả bài của giáo viên trong trường mình
+CREATE POLICY "quizzes: bgh read school"
+  ON public.quizzes FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM   public.profiles  p
+      JOIN   public.profiles  tp ON tp.id = quizzes.teacher_id
+      WHERE  p.id             = auth.uid()
+      AND    p.role           = 'bgh'
+      AND    p.school_id      IS NOT NULL
+      AND    p.school_id      = tp.school_id
+    )
+  );
 
 -- ── quiz_questions ────────────────────────────────────────────────────────────
 ALTER TABLE public.quiz_questions ENABLE ROW LEVEL SECURITY;
@@ -889,12 +923,31 @@ CREATE POLICY "qq: teacher of quiz"
     )
   );
 
-CREATE POLICY "qq: read published quiz"
+-- Phụ huynh đọc câu hỏi khi đã có quyền truy cập bài
+CREATE POLICY "qq: parent via assignment"
   ON public.quiz_questions FOR SELECT
   USING (
     EXISTS (
       SELECT 1 FROM public.quizzes
-      WHERE id = quiz_id AND status = 'published'
+      WHERE  id     = quiz_id
+      AND    status = 'published'
+    )
+    AND public.parent_can_access_quiz(quiz_id)
+  );
+
+-- BGH đọc câu hỏi của bài trong trường mình
+CREATE POLICY "qq: bgh read school"
+  ON public.quiz_questions FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM   public.quizzes   q
+      JOIN   public.profiles  p  ON p.id  = auth.uid()
+      JOIN   public.profiles  tp ON tp.id = q.teacher_id
+      WHERE  q.id         = quiz_id
+      AND    p.role        = 'bgh'
+      AND    p.school_id   IS NOT NULL
+      AND    p.school_id   = tp.school_id
     )
   );
 
@@ -912,6 +965,19 @@ CREATE POLICY "qassign: class teacher read"
     EXISTS (
       SELECT 1 FROM public.classes
       WHERE id = class_id AND teacher_id = auth.uid()
+    )
+  );
+
+-- Phụ huynh xem được assignment của lớp có con họ
+CREATE POLICY "qassign: parent read"
+  ON public.quiz_assignments FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM   public.class_memberships cm
+      JOIN   public.children          c ON c.id = cm.child_id
+      WHERE  cm.class_id = quiz_assignments.class_id
+      AND    c.parent_id = auth.uid()
     )
   );
 

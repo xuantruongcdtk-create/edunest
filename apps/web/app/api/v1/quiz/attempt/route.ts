@@ -5,6 +5,7 @@ import { z } from 'zod'
 
 const AttemptSchema = z.object({
   quizId:           z.string().uuid(),
+  childId:          z.string().uuid().optional(),
   answers:          z.array(z.number().int().min(0)).min(1),
   timeTakenSeconds: z.number().int().min(0),
 })
@@ -18,9 +19,12 @@ export const POST = withHandler(async (req) => {
   const parsed = AttemptSchema.safeParse(body)
   if (!parsed.success) throw new ValidationError('Invalid input', parsed.error.flatten())
 
+  // Use childId when parent submits on behalf of child; otherwise use own ID
+  const studentId = parsed.data.childId ?? user.id
+
   const attempt = await submitAttempt(
     parsed.data.quizId,
-    user.id,
+    studentId,
     parsed.data.answers,
     parsed.data.timeTakenSeconds,
   )

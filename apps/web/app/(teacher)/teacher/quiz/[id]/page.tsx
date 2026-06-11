@@ -1,17 +1,17 @@
 'use client'
 
-import { useState, useEffect, use } from 'react'
-import { useRouter }                 from 'next/navigation'
-import Link                          from 'next/link'
-import { getBrowserClient }          from '../../../../../lib/supabase'
+import { useState, useEffect, useCallback } from 'react'
+import { useRouter }                         from 'next/navigation'
+import Link                                  from 'next/link'
+import { getBrowserClient }                  from '../../../../../lib/supabase'
 
 interface Question {
-  id:           string
+  id:            string
   question_text: string
-  options:      string[]
+  options:       string[]
   correct_index: number
-  explanation:  string | null
-  order_index:  number
+  explanation:   string | null
+  order_index:   number
 }
 
 interface QuizDetail {
@@ -29,6 +29,20 @@ interface QuizDetail {
   questions:          Question[]
 }
 
+interface ClassItem {
+  id:            string
+  name:          string
+  grade:         number
+  student_count: number
+}
+
+interface Assignment {
+  id:       string
+  class_id: string
+  due_date: string | null
+  class:    ClassItem
+}
+
 const SUBJ_LABEL: Record<string, string> = {
   math: 'Toán', literature: 'Văn', english: 'Anh', physics: 'Lý',
   chemistry: 'Hóa', biology: 'Sinh', history: 'Sử', geography: 'Địa',
@@ -40,52 +54,95 @@ const DIFF_CONFIG = {
   hard:   { label: 'Khó', color: 'bg-danger/10 text-danger' },
 }
 const STATUS_CONFIG = {
-  draft:     { label: 'Nháp',     color: 'bg-gray-100 text-gray-500' },
+  draft:     { label: 'Nháp',    color: 'bg-gray-100 text-gray-500' },
   published: { label: 'Đã đăng', color: 'bg-primary/10 text-primary' },
   archived:  { label: 'Lưu trữ', color: 'bg-gray-100 text-gray-400' },
 }
 const OPTS = ['A', 'B', 'C', 'D']
 
-export default function QuizDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params)
+export default function QuizDetailPage({ params }: { params: { id: string } }) {
+  const { id } = params
   const router  = useRouter()
 
-  const [quiz,       setQuiz]       = useState<QuizDetail | null>(null)
-  const [loading,    setLoading]    = useState(true)
-  const [notFound,   setNotFound]   = useState(false)
-  const [updating,   setUpdating]   = useState(false)
-  const [statusMsg,  setStatusMsg]  = useState<string | null>(null)
-  const [expandedQ,  setExpandedQ]  = useState<Set<string>>(new Set())
+  const [quiz,          setQuiz]          = useState<QuizDetail | null>(null)
+  const [loading,       setLoading]       = useState(true)
+  const [notFound,      setNotFound]      = useState(false)
+  const [updating,      setUpdating]      = useState(false)
+  const [statusMsg,     setStatusMsg]     = useState<string | null>(null)
+  const [expandedQ,     setExpandedQ]     = useState<Set<string>>(new Set())
+
+  // Assignment state
+  const [classes,        setClasses]        = useState<ClassItem[]>([])
+  const [assignments,    setAssignments]    = useState<Assignment[]>([])
+  const [assignLoading,  setAssignLoading]  = useState(true)
+  const [pendingClassId, setPendingClassId] = useState<string | null>(null)
+  const [pendingDueDate, setPendingDueDate] = useState<string>('')
+  const [assignMsg,      setAssignMsg]      = useState<string | null>(null)
+  const [assignErr,      setAssignErr]      = useState<string | null>(null)
 
   useEffect(() => {
     async function load() {
-      const sb = getBrowserClient()
-      const { data: { user } } = await sb.auth.getUser()
-      if (!user) { router.push('/login'); return }
+      try {
+        const sb = getBrowserClient()
+        const { data: { user } } = await sb.auth.getUser()
+        if (!user) { router.push('/login'); return }
 
-      const { data: quizData, error } = await sb
-        .from('quizzes')
-        .select('id, title, subject, grade, difficulty, status, question_count, time_limit_minutes, ai_generated, due_date, created_at')
-        .eq('id', id)
-        .eq('teacher_id', user.id)
-        .single()
+        const { data: quizData, error } = await sb
+          .from('quizzes')
+          .select('id, title, subject, grade, difficulty, status, question_count, time_limit_minutes, ai_generated, due_date, created_at')
+          .eq('id', id)
+          .eq('teacher_id', user.id)
+          .single()
 
-      if (error || !quizData) { setNotFound(true); setLoading(false); return }
+        if (error || !quizData) { setNotFound(true); setLoading(false); return }
 
-      const { data: questions } = await sb
-        .from('quiz_questions')
-        .select('id, question_text, options, correct_index, explanation, order_index')
-        .eq('quiz_id', id)
-        .order('order_index', { ascending: true })
+        const { data: questions } = await sb
+          .from('quiz_questions')
+          .select('id, question_text, options, correct_index, explanation, order_index')
+          .eq('quiz_id', id)
+          .order('order_index', { ascending: true })
 
-      setQuiz({
-        ...(quizData as Omit<QuizDetail, 'questions'>),
-        questions: (questions ?? []) as Question[],
-      })
-      setLoading(false)
+        setQuiz({
+          ...(quizData as Omit<QuizDetail, 'questions'>),
+          questions: (questions ?? []) as Question[],
+        })
+        setLoading(false)
+      } catch {
+        setNotFound(true)
+        setLoading(false)
+      }
     }
     load()
   }, [id, router])
+
+  const loadAssignments = useCallback(async () => {
+    setAssignLoading(true)
+    try {
+      const sb = getBrowserClient()
+      const { data: { user } } = await sb.auth.getUser()
+      if (!user) return
+
+      const [{ data: classData }, { data: assignData }] = await Promise.all([
+        sb.from('classes')
+          .select('id, name, grade, student_count')
+          .eq('teacher_id', user.id)
+          .order('grade', { ascending: true }),
+        (sb as any)
+          .from('quiz_assignments')
+          .select('id, class_id, due_date, class:classes!class_id(id, name, grade, student_count)')
+          .eq('quiz_id', id),
+      ])
+
+      setClasses((classData ?? []) as ClassItem[])
+      setAssignments((assignData ?? []) as Assignment[])
+    } finally {
+      setAssignLoading(false)
+    }
+  }, [id])
+
+  useEffect(() => {
+    loadAssignments()
+  }, [loadAssignments])
 
   async function updateStatus(newStatus: 'published' | 'archived' | 'draft') {
     if (!quiz) return
@@ -100,7 +157,11 @@ export default function QuizDetailPage({ params }: { params: Promise<{ id: strin
     setUpdating(false)
     if (error) { setStatusMsg('Cập nhật thất bại.'); return }
     setQuiz((prev) => prev ? { ...prev, status: newStatus } : prev)
-    setStatusMsg(newStatus === 'published' ? '✓ Đã đăng bài' : newStatus === 'archived' ? '✓ Đã lưu trữ' : '✓ Chuyển về nháp')
+    setStatusMsg(
+      newStatus === 'published' ? '✓ Đã đăng bài'
+      : newStatus === 'archived' ? '✓ Đã lưu trữ'
+      : '✓ Chuyển về nháp',
+    )
     setTimeout(() => setStatusMsg(null), 3000)
   }
 
@@ -114,6 +175,43 @@ export default function QuizDetailPage({ params }: { params: Promise<{ id: strin
     await sb.from('quiz_questions').delete().eq('quiz_id', id)
     await sb.from('quizzes').delete().eq('id', id)
     router.push('/teacher/quiz')
+  }
+
+  async function assignToClass(classId: string, dueDate: string | null) {
+    setUpdating(true); setAssignErr(null)
+    try {
+      const res = await fetch(`/api/v1/quiz/${id}/assign`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ classId, dueDate: dueDate || null }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        setAssignErr((err as { error?: string }).error ?? 'Giao bài thất bại')
+        return
+      }
+      await loadAssignments()
+      setPendingClassId(null)
+      setPendingDueDate('')
+      setAssignMsg('✓ Đã giao bài')
+      setTimeout(() => setAssignMsg(null), 3000)
+    } finally {
+      setUpdating(false)
+    }
+  }
+
+  async function unassignFromClass(classId: string) {
+    const cls = classes.find((c) => c.id === classId)
+    if (!window.confirm(`Bỏ giao bài khỏi lớp "${cls?.name ?? ''}"?`)) return
+    setUpdating(true)
+    try {
+      await fetch(`/api/v1/quiz/${id}/assign?classId=${classId}`, { method: 'DELETE' })
+      setAssignments((prev) => prev.filter((a) => a.class_id !== classId))
+      setAssignMsg('✓ Đã bỏ giao')
+      setTimeout(() => setAssignMsg(null), 3000)
+    } finally {
+      setUpdating(false)
+    }
   }
 
   function toggleExpand(qId: string) {
@@ -149,8 +247,8 @@ export default function QuizDetailPage({ params }: { params: Promise<{ id: strin
 
   if (!quiz) return null
 
-  const diff   = DIFF_CONFIG[quiz.difficulty]
-  const status = STATUS_CONFIG[quiz.status]
+  const diff   = DIFF_CONFIG[quiz.difficulty]   ?? DIFF_CONFIG.medium
+  const status = STATUS_CONFIG[quiz.status]     ?? STATUS_CONFIG.draft
 
   return (
     <div className="flex flex-col min-h-full">
@@ -183,8 +281,8 @@ export default function QuizDetailPage({ params }: { params: Promise<{ id: strin
 
           {/* Actions */}
           <div className="flex items-center gap-2 flex-shrink-0">
-            {statusMsg && (
-              <span className="text-xs text-success font-medium animate-fade-in">{statusMsg}</span>
+            {(statusMsg || assignMsg) && (
+              <span className="text-xs text-success font-medium animate-fade-in">{statusMsg ?? assignMsg}</span>
             )}
 
             {quiz.status === 'draft' && (
@@ -219,10 +317,10 @@ export default function QuizDetailPage({ params }: { params: Promise<{ id: strin
         {/* Meta cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { label: 'Số câu hỏi',  value: `${quiz.question_count} câu` },
-            { label: 'Thời gian',   value: `${quiz.time_limit_minutes} phút` },
-            { label: 'Ngày tạo',    value: new Date(quiz.created_at).toLocaleDateString('vi-VN') },
-            { label: 'Hạn nộp',     value: quiz.due_date ? new Date(quiz.due_date).toLocaleDateString('vi-VN') : 'Chưa đặt' },
+            { label: 'Số câu hỏi', value: `${quiz.question_count} câu` },
+            { label: 'Thời gian',  value: `${quiz.time_limit_minutes} phút` },
+            { label: 'Ngày tạo',   value: new Date(quiz.created_at).toLocaleDateString('vi-VN') },
+            { label: 'Đã giao',    value: assignments.length > 0 ? `${assignments.length} lớp` : 'Chưa giao' },
           ].map((m) => (
             <div key={m.label} className="bg-white rounded-card shadow-card p-4">
               <p className="text-xs text-gray-400 mb-1">{m.label}</p>
@@ -231,7 +329,149 @@ export default function QuizDetailPage({ params }: { params: Promise<{ id: strin
           ))}
         </div>
 
-        {/* Questions list */}
+        {/* ── Assignment section ─────────────────────────────────────────── */}
+        <div className="bg-white rounded-card shadow-card overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-3">
+            <div>
+              <h2 className="font-display font-semibold text-gray-900">Giao bài cho lớp</h2>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {assignments.length > 0
+                  ? `Đang giao cho ${assignments.length} lớp · phụ huynh có con trong lớp sẽ thấy bài`
+                  : 'Chưa giao cho lớp nào'}
+              </p>
+            </div>
+            {quiz.status !== 'published' && classes.length > 0 && (
+              <span className="flex-shrink-0 text-xs text-warning bg-warning/8 px-2.5 py-1 rounded-full font-medium">
+                Cần đăng bài trước để học sinh thấy
+              </span>
+            )}
+          </div>
+
+          {assignErr && (
+            <div className="px-5 py-3 bg-danger/4 border-b border-danger/10 text-xs text-danger font-medium">
+              {assignErr}
+            </div>
+          )}
+
+          {assignLoading ? (
+            <div className="p-4 space-y-3">
+              {[1, 2].map((i) => (
+                <div key={i} className="h-14 bg-gray-50 rounded-input animate-pulse motion-safe:animate-pulse" />
+              ))}
+            </div>
+          ) : classes.length === 0 ? (
+            <div className="py-12 text-center">
+              <span className="text-3xl">🏫</span>
+              <p className="text-sm text-gray-500 mt-3 font-medium">Bạn chưa có lớp nào</p>
+              <p className="text-xs text-gray-400 mt-1 mb-4">Tạo lớp học trước để có thể giao bài.</p>
+              <Link href="/teacher/classes"
+                className="inline-flex items-center gap-1.5 text-xs text-primary border border-primary/30 px-3 py-1.5 rounded-btn hover:bg-primary/5 transition-colors">
+                + Tạo lớp học
+              </Link>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-50">
+              {classes.map((cls) => {
+                const assignment = assignments.find((a) => a.class_id === cls.id)
+                const isAssigned = !!assignment
+                const isPending  = pendingClassId === cls.id
+
+                return (
+                  <div key={cls.id}
+                    className={`transition-colors ${isAssigned ? 'bg-primary/[0.02]' : ''}`}>
+                    <div className="px-5 py-3.5 flex items-center gap-3">
+                      {/* Status dot */}
+                      <div className={`h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold ${
+                        isAssigned ? 'bg-primary/10 text-primary' : 'bg-gray-100 text-gray-400'
+                      }`}>
+                        {isAssigned ? '✓' : cls.grade}
+                      </div>
+
+                      {/* Class info */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-900">
+                          {cls.name}
+                          <span className="ml-1.5 text-xs text-gray-400 font-normal">Lớp {cls.grade}</span>
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          {cls.student_count} học sinh
+                          {isAssigned && assignment.due_date && (
+                            <span className="text-warning ml-2">
+                              · Hạn: {new Date(assignment.due_date).toLocaleDateString('vi-VN')}
+                            </span>
+                          )}
+                          {isAssigned && !assignment.due_date && (
+                            <span className="text-gray-400 ml-2">· Không hạn</span>
+                          )}
+                        </p>
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {isAssigned ? (
+                          <>
+                            <button
+                              onClick={() => {
+                                setPendingClassId(cls.id)
+                                setPendingDueDate(assignment.due_date ? assignment.due_date.slice(0, 10) : '')
+                              }}
+                              className="text-xs text-gray-600 border border-gray-200 px-2.5 py-1.5 rounded-input hover:border-primary/40 hover:text-primary transition-colors">
+                              Sửa hạn
+                            </button>
+                            <button
+                              onClick={() => unassignFromClass(cls.id)}
+                              disabled={updating}
+                              className="text-xs text-danger border border-danger/20 px-2.5 py-1.5 rounded-input hover:bg-danger/5 transition-colors disabled:opacity-50">
+                              Bỏ giao
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            onClick={() => { setPendingClassId(cls.id); setPendingDueDate('') }}
+                            className="text-xs text-primary font-semibold border border-primary/30 bg-primary/6 px-3 py-1.5 rounded-input hover:bg-primary/12 transition-colors">
+                            + Giao bài
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Inline date picker when pending */}
+                    {isPending && (
+                      <div className="px-5 pb-3.5 ml-11 flex items-center gap-2 flex-wrap">
+                        <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-input px-3 py-1.5">
+                          <span className="text-xs text-gray-400">Hạn nộp:</span>
+                          <input
+                            type="date"
+                            value={pendingDueDate}
+                            onChange={(e) => setPendingDueDate(e.target.value)}
+                            className="text-sm text-gray-800 bg-transparent outline-none"
+                          />
+                        </div>
+                        <span className="text-xs text-gray-400">(tuỳ chọn)</span>
+                        <button
+                          onClick={() => assignToClass(cls.id, pendingDueDate || null)}
+                          disabled={updating}
+                          className="text-xs bg-primary text-white font-semibold px-3 py-1.5 rounded-input hover:bg-primary-dark transition-colors disabled:opacity-60 flex items-center gap-1">
+                          {updating
+                            ? <span className="h-3 w-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                            : null}
+                          Xác nhận
+                        </button>
+                        <button
+                          onClick={() => setPendingClassId(null)}
+                          className="text-xs text-gray-500 px-2.5 py-1.5 rounded-input hover:bg-gray-100 transition-colors">
+                          Hủy
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* ── Questions list ─────────────────────────────────────────────── */}
         <div className="bg-white rounded-card shadow-card overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
             <h2 className="font-display font-semibold text-gray-900">
@@ -259,7 +499,6 @@ export default function QuizDetailPage({ params }: { params: Promise<{ id: strin
                 const expanded = expandedQ.has(q.id)
                 return (
                   <div key={q.id} className="p-5">
-                    {/* Question header */}
                     <button
                       onClick={() => toggleExpand(q.id)}
                       className="w-full flex items-start gap-4 text-left group"
@@ -275,7 +514,6 @@ export default function QuizDetailPage({ params }: { params: Promise<{ id: strin
                       </span>
                     </button>
 
-                    {/* Options (expanded) */}
                     {expanded && (
                       <div className="mt-3 ml-11 space-y-2 animate-fade-in">
                         {q.options.map((opt, i) => {

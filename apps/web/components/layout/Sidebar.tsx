@@ -10,6 +10,7 @@ interface NavItem { href: string; label: string; icon: string }
 const PARENT_NAV: NavItem[]  = [
   { href: '/parent/dashboard',  label: 'Tổng quan',    icon: '⊞' },
   { href: '/parent/scores',     label: 'Bảng điểm',    icon: '📊' },
+  { href: '/parent/quiz',       label: 'Bài kiểm tra', icon: '📝' },
   { href: '/parent/coach',      label: 'EduCoach AI',  icon: '🤖' },
   { href: '/parent/children',   label: 'Hồ sơ con',    icon: '👦' },
   { href: '/parent/reports',    label: 'Báo cáo',      icon: '📄' },
