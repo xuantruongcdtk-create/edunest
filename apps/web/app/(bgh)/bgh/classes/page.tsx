@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from 'react'
 import { getBrowserClient }                  from '../../../../lib/supabase'
 import { SchoolKPIGrid }                     from '../../../../components/bgh/SchoolKPIGrid'
 import { ClassRankTable }                    from '../../../../components/bgh/ClassRankTable'
-import { useUser }                           from '../../../../lib/user-context'
 
 interface KPIData {
   school_id:      string
@@ -18,8 +17,6 @@ interface KPIData {
 interface ClassAvg { [classId: string]: number }
 
 export default function BghClassesPage() {
-  const { userId } = useUser()
-
   const [kpi,       setKpi]       = useState<KPIData | null>(null)
   const [classAvgs, setClassAvgs] = useState<ClassAvg>({})
   const [loading,   setLoading]   = useState(true)
@@ -91,21 +88,25 @@ export default function BghClassesPage() {
     e.preventDefault()
     if (!kpi) return
     setSaving(true)
+    setError(null)
 
-    const sb = getBrowserClient()
-
-    await sb.from('classes').insert({
-      school_id:    kpi.school_id,
-      teacher_id:   userId,
-      name:         newName.trim(),
-      grade:        newGrade,
-      academic_year: newYear,
+    const res = await fetch('/api/v1/bgh/classes', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ name: newName.trim(), grade: newGrade, academicYear: newYear }),
     })
 
     setSaving(false)
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      setError((err as { error?: string }).error ?? 'Không thể thêm lớp. Thử lại nhé.')
+      return
+    }
+
     setShowModal(false)
     setNewName('')
-    load()
+    await load()   // KPI cache đã được server xóa → lớp mới hiện ra
   }
 
   const classesWithAvg = (kpi?.classes ?? []).map((c) => ({
