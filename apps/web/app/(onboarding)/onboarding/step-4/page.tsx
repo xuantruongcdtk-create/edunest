@@ -26,6 +26,9 @@ export default function OnboardingStep4() {
       setName(p?.full_name ?? 'bạn')
       setRole(p?.role ?? 'parent')
       setChildren((childrenRes.data ?? []) as { full_name: string; grade: number }[])
+
+      // Tới được bước này = đã hoàn tất các bước nhập liệu → đánh dấu hoàn tất onboarding
+      await sb.from('profiles').update({ onboarding_completed: true }).eq('id', user.id)
     }
     load()
   }, [router])

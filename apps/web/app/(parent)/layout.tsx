@@ -9,11 +9,12 @@ export default async function ParentLayout({ children }: { children: React.React
 
   const { data: profile } = await db
     .from('profiles')
-    .select('full_name, role')
+    .select('full_name, role, onboarding_completed')
     .eq('id', user.id)
     .single()
 
-  const p = profile as { full_name: string; role: string } | null
+  const p = profile as { full_name: string; role: string; onboarding_completed: boolean } | null
+  if (p && p.role !== 'admin' && !p.onboarding_completed) redirect('/onboarding/step-1')
   if (p?.role === 'teacher') redirect('/teacher/dashboard')
   if (p?.role === 'bgh')     redirect('/bgh/dashboard')
   if (p?.role === 'admin')   redirect('/admin/dashboard')
