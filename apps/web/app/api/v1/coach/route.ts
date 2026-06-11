@@ -1,6 +1,6 @@
 import { getServerClient } from '@edunest/db'
 import { getOrCreateConversation, streamCoachReply } from '@edunest/services'
-import { apiError, UnauthorizedError, ValidationError } from '@edunest/core'
+import { UnauthorizedError, ValidationError } from '@edunest/core'
 import { z } from 'zod'
 
 const MessageSchema = z.object({
@@ -34,7 +34,9 @@ export async function POST(req: Request) {
           controller.enqueue(encoder.encode('data: [DONE]\n\n'))
           controller.close()
         } catch (err) {
-          controller.error(err)
+          console.error('[coach] stream error:', err)
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: String(err) })}\n\n`))
+          controller.close()
         }
       },
     })
@@ -47,6 +49,11 @@ export async function POST(req: Request) {
       },
     })
   } catch (err) {
-    return apiError(err)
+    console.error('[coach] route error:', err)
+    const msg = err instanceof Error ? err.message : String(err)
+    return new Response(JSON.stringify({ error: msg }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    })
   }
 }

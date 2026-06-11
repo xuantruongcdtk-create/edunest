@@ -42,9 +42,11 @@ export const CoachChat = forwardRef<HTMLDivElement, CoachChatProps>(
 
         if (!res.ok) {
           const errText = await res.text()
+          let errDetail = ''
+          try { errDetail = JSON.parse(errText)?.error ?? errText } catch { errDetail = errText }
           setMessages((m) => [
             ...m.slice(0, -1),
-            { role: 'assistant', content: `Xin lỗi, có lỗi xảy ra (${res.status}). Vui lòng thử lại.` },
+            { role: 'assistant', content: `[Lỗi ${res.status}]: ${errDetail}` },
           ])
           console.error('Coach API error:', res.status, errText)
           return
