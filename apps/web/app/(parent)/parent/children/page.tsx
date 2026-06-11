@@ -6,12 +6,30 @@ import { getBrowserClient }    from '../../../../lib/supabase'
 import { useUser }             from '../../../../lib/user-context'
 
 interface Child {
-  id:          string
-  full_name:   string
-  grade:       number
-  created_at:  string
-  avg_score:   number | null
-  score_count: number
+  id:            string
+  full_name:     string
+  grade:         number
+  date_of_birth: string | null
+  school_name:   string | null
+  created_at:    string
+  avg_score:     number | null
+  score_count:   number
+}
+
+function toDisplayDate(iso: string | null): string {
+  if (!iso) return ''
+  const parts = iso.split('-')
+  if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`
+  return iso
+}
+
+function toISODate(display: string): string | null {
+  if (!display.trim()) return null
+  const parts = display.split('/')
+  if (parts.length === 3 && parts[2]!.length === 4) {
+    return `${parts[2]}-${parts[1]!.padStart(2, '0')}-${parts[0]!.padStart(2, '0')}`
+  }
+  return null
 }
 
 const GRADES = Array.from({ length: 12 }, (_, i) => i + 1)
@@ -31,8 +49,10 @@ export default function ChildrenPage() {
   const [error,     setError]     = useState<string | null>(null)
 
   // Form fields
-  const [formName,  setFormName]  = useState('')
-  const [formGrade, setFormGrade] = useState(1)
+  const [formName,   setFormName]   = useState('')
+  const [formGrade,  setFormGrade]  = useState(1)
+  const [formDOB,    setFormDOB]    = useState('')
+  const [formSchool, setFormSchool] = useState('')
 
   useEffect(() => { loadChildren() }, [])
 
@@ -42,7 +62,7 @@ export default function ChildrenPage() {
 
     const { data: kids } = await sb
       .from('children')
-      .select('id, full_name, grade, created_at')
+      .select('id, full_name, grade, date_of_birth, school_name, created_at')
       .eq('parent_id', userId)
       .order('created_at')
 
@@ -68,13 +88,15 @@ export default function ChildrenPage() {
   }
 
   function openAdd() {
-    setFormName(''); setFormGrade(1)
+    setFormName(''); setFormGrade(1); setFormDOB(''); setFormSchool('')
     setEditTarget(null); setError(null); setModal('add')
   }
 
   function openEdit(child: Child) {
     setFormName(child.full_name)
     setFormGrade(child.grade)
+    setFormDOB(toDisplayDate(child.date_of_birth))
+    setFormSchool(child.school_name ?? '')
     setEditTarget(child); setError(null); setModal('edit')
   }
 
@@ -87,18 +109,30 @@ export default function ChildrenPage() {
 
     const sb = getBrowserClient()
 
+    const dob = toISODate(formDOB)
+    if (formDOB.trim() && !dob) {
+      setError('Ngày sinh không hợp lệ. Nhập theo định dạng dd/mm/yyyy.'); setSaving(false); return
+    }
+
     if (modal === 'add') {
       if (children.length >= 5) { setError('Tối đa 5 học sinh trên tài khoản.'); setSaving(false); return }
       const { error: insErr } = await sb.from('children').insert({
-        parent_id: userId,
-        full_name: formName.trim(),
-        grade:     formGrade,
+        parent_id:     userId,
+        full_name:     formName.trim(),
+        grade:         formGrade,
+        date_of_birth: dob,
+        school_name:   formSchool.trim() || null,
       })
       if (insErr) { setError('Không thể thêm học sinh. Thử lại nhé.'); setSaving(false); return }
     } else if (modal === 'edit' && editTarget) {
       const { error: updErr } = await sb
         .from('children')
-        .update({ full_name: formName.trim(), grade: formGrade })
+        .update({
+          full_name:     formName.trim(),
+          grade:         formGrade,
+          date_of_birth: dob,
+          school_name:   formSchool.trim() || null,
+        })
         .eq('id', editTarget.id)
       if (updErr) { setError('Không thể cập nhật. Thử lại nhé.'); setSaving(false); return }
     }
@@ -187,6 +221,12 @@ export default function ChildrenPage() {
                       <div>
                         <h3 className="font-display font-bold text-gray-900">{child.full_name}</h3>
                         <p className="text-xs text-gray-500 mt-0.5">{getGradeLabel(child.grade)}</p>
+                        {child.school_name && (
+                          <p className="text-xs text-gray-400 mt-0.5 truncate max-w-[140px]">{child.school_name}</p>
+                        )}
+                        {child.date_of_birth && (
+                          <p className="text-xs text-gray-400">{toDisplayDate(child.date_of_birth)}</p>
+                        )}
                       </div>
                     </div>
                     {/* Actions menu */}
@@ -311,6 +351,28 @@ export default function ChildrenPage() {
                   ))}
                 </div>
                 <p className="text-xs text-gray-400 mt-1">{getGradeLabel(formGrade)}</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Ngày sinh</label>
+                <input
+                  type="text"
+                  value={formDOB}
+                  onChange={(e) => setFormDOB(e.target.value)}
+                  placeholder="dd/mm/yyyy"
+                  className="w-full border border-gray-200 rounded-input px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Trường học</label>
+                <input
+                  type="text"
+                  value={formSchool}
+                  onChange={(e) => setFormSchool(e.target.value)}
+                  placeholder="Trường THCS Nguyễn Du"
+                  className="w-full border border-gray-200 rounded-input px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                />
               </div>
 
               <div className="flex gap-3 pt-2">

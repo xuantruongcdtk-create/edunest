@@ -1,8 +1,9 @@
 'use client'
 import { forwardRef, type HTMLAttributes } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '../../lib/cn'
+import { getBrowserClient } from '../../lib/supabase'
 
 interface NavItem { href: string; label: string; icon: string }
 
@@ -57,7 +58,14 @@ interface SidebarProps extends HTMLAttributes<HTMLElement> {
 export const Sidebar = forwardRef<HTMLElement, SidebarProps>(
   ({ className, role, userName, ...props }, ref) => {
     const pathname = usePathname()
+    const router   = useRouter()
     const items    = NAV_MAP[role] ?? PARENT_NAV
+
+    async function handleLogout() {
+      const sb = getBrowserClient()
+      await sb.auth.signOut()
+      router.replace('/login')
+    }
 
     return (
       <aside
@@ -99,9 +107,9 @@ export const Sidebar = forwardRef<HTMLElement, SidebarProps>(
         </nav>
 
         {/* User footer */}
-        <div className="px-4 py-4 border-t border-gray-100">
+        <div className="px-4 py-4 border-t border-gray-100 space-y-2">
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
               <span className="text-primary text-sm font-semibold">
                 {userName.charAt(0).toUpperCase()}
               </span>
@@ -111,6 +119,13 @@ export const Sidebar = forwardRef<HTMLElement, SidebarProps>(
               <p className="text-xs text-gray-400 capitalize">{role}</p>
             </div>
           </div>
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-500 hover:bg-danger/8 hover:text-danger transition-colors"
+          >
+            <span className="text-base w-5 text-center">↩</span>
+            Đăng xuất
+          </button>
         </div>
       </aside>
     )
