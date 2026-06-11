@@ -63,12 +63,21 @@ export const CoachChat = forwardRef<HTMLDivElement, CoachChatProps>(
             const payload = line.slice(6).trim()
             if (payload === '[DONE]') break
             try {
-              const parsed = JSON.parse(payload) as { text: string }
-              assistantText += parsed.text
-              setMessages((m) => [
-                ...m.slice(0, -1),
-                { role: 'assistant', content: assistantText },
-              ])
+              const parsed = JSON.parse(payload) as { text?: string; error?: string }
+              if (parsed.error) {
+                setMessages((m) => [
+                  ...m.slice(0, -1),
+                  { role: 'assistant', content: `[Lỗi server]: ${parsed.error}` },
+                ])
+                return
+              }
+              if (parsed.text) {
+                assistantText += parsed.text
+                setMessages((m) => [
+                  ...m.slice(0, -1),
+                  { role: 'assistant', content: assistantText },
+                ])
+              }
             } catch { /* skip malformed chunks */ }
           }
         }
