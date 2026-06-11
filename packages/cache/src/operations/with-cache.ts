@@ -10,10 +10,20 @@ export async function withCache<T>(
   ttlSeconds: number,
   fetcher: () => Promise<T>,
 ): Promise<T> {
-  const cached = await cacheGet<T>(key)
-  if (cached !== null) return cached
+  try {
+    const cached = await cacheGet<T>(key)
+    if (cached !== null) return cached
+  } catch {
+    // Redis unavailable — skip cache read, fetch fresh
+  }
 
   const fresh = await fetcher()
-  await cacheSet(key, fresh, ttlSeconds)
+
+  try {
+    await cacheSet(key, fresh, ttlSeconds)
+  } catch {
+    // Redis unavailable — return data without caching
+  }
+
   return fresh
 }
