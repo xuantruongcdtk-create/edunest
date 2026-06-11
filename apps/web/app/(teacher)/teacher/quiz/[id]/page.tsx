@@ -363,11 +363,7 @@ export default function QuizDetailPage({ params }: { params: { id: string } }) {
             <div className="py-12 text-center">
               <span className="text-3xl">🏫</span>
               <p className="text-sm text-gray-500 mt-3 font-medium">Bạn chưa có lớp nào</p>
-              <p className="text-xs text-gray-400 mt-1 mb-4">Tạo lớp học trước để có thể giao bài.</p>
-              <Link href="/teacher/classes"
-                className="inline-flex items-center gap-1.5 text-xs text-primary border border-primary/30 px-3 py-1.5 rounded-btn hover:bg-primary/5 transition-colors">
-                + Tạo lớp học
-              </Link>
+              <p className="text-xs text-gray-400 mt-1">Liên hệ quản trị viên trường để được thêm vào lớp.</p>
             </div>
           ) : (
             <div className="divide-y divide-gray-50">
