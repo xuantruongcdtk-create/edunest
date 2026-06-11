@@ -62,7 +62,7 @@ export function RegisterForm() {
 
     try {
       const supabase = getBrowserClient()
-      const { error: signUpError } = await supabase.auth.signUp({
+      const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -80,6 +80,13 @@ export function RegisterForm() {
         return
       }
 
+      // If Supabase returned a session, email confirmation is disabled — go straight to onboarding
+      if (data.session) {
+        router.replace('/onboarding/step-1')
+        return
+      }
+
+      // Otherwise show "check your email" screen
       setSuccess(true)
     } finally {
       setLoading(false)
