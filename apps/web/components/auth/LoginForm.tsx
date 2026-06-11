@@ -5,21 +5,11 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { getBrowserClient } from '../../lib/supabase'
 
-type Role = 'parent' | 'teacher' | 'bgh'
-
-const ROLE_DASHBOARDS: Record<string, string> = {
-  parent:  '/parent/dashboard',
-  teacher: '/teacher/dashboard',
-  bgh:     '/bgh/dashboard',
-  admin:   '/admin/dashboard',
-}
-
 export function LoginForm() {
   const router       = useRouter()
   const searchParams = useSearchParams()
   const nextUrl      = searchParams.get('next') ?? ''
 
-  const [role,     setRole]     = useState<Role>('parent')
   const [email,    setEmail]    = useState('')
   const [password, setPassword] = useState('')
   const [showPwd,  setShowPwd]  = useState(false)
@@ -37,7 +27,7 @@ export function LoginForm() {
 
     try {
       const supabase = getBrowserClient()
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
 
       if (signInError) {
         if (signInError.message.includes('Invalid login credentials')) {
@@ -50,16 +40,9 @@ export function LoginForm() {
         return
       }
 
-      // Update role server-side (bypasses RLS) so the layout sees the correct role
-      await fetch('/api/v1/profile/role', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ role }),
-        credentials: 'include',
-      })
-
-      // If caller specified a next URL, honour it; otherwise go to the role dashboard
-      router.push(nextUrl || ROLE_DASHBOARDS[role] || '/dashboard')
+      // Role được quyết định bởi tài khoản (đã set lúc đăng ký), KHÔNG ghi đè theo lựa chọn.
+      // /dashboard là hub: tự chuyển hướng theo profiles.role thật của tài khoản.
+      router.push(nextUrl || '/dashboard')
       router.refresh()
     } finally {
       setLoading(false)
@@ -123,32 +106,6 @@ export function LoginForm() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Role picker */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Bạn là</label>
-          <div className="grid grid-cols-3 gap-2">
-            {([
-              { value: 'parent',  label: 'Phụ huynh',     icon: '👨‍👩‍👧' },
-              { value: 'teacher', label: 'Giáo viên',     icon: '👩‍🏫' },
-              { value: 'bgh',     label: 'Ban giám hiệu', icon: '🏫' },
-            ] as { value: Role; label: string; icon: string }[]).map(({ value, label, icon }) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setRole(value)}
-                className={`flex flex-col items-center justify-center gap-1 py-2.5 px-1 rounded-input border text-xs font-medium text-center transition-colors ${
-                  role === value
-                    ? 'border-primary bg-primary/8 text-primary'
-                    : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                }`}
-              >
-                <span className="text-base">{icon}</span>
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
           <input
