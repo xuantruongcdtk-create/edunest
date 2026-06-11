@@ -50,14 +50,13 @@ export function LoginForm() {
         return
       }
 
-      if (signInData.user) {
-        // Sync the selected role to the profile so the dashboard reflects it
-        await supabase.from('profiles').upsert({
-          id:    signInData.user.id,
-          email: signInData.user.email!,
-          role,
-        })
-      }
+      // Update role server-side (bypasses RLS) so the layout sees the correct role
+      await fetch('/api/v1/profile/role', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ role }),
+        credentials: 'include',
+      })
 
       // If caller specified a next URL, honour it; otherwise go to the role dashboard
       router.push(nextUrl || ROLE_DASHBOARDS[role] || '/dashboard')
