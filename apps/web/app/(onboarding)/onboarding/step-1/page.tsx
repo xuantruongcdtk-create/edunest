@@ -9,6 +9,7 @@ export default function OnboardingStep1() {
 
   const [fullName, setFullName] = useState('')
   const [phone,    setPhone]    = useState('')
+  const [role,     setRole]     = useState('parent')
   const [loading,  setLoading]  = useState(false)
   const [fetching, setFetching] = useState(true)
   const [error,    setError]    = useState<string | null>(null)
@@ -21,16 +22,20 @@ export default function OnboardingStep1() {
 
       const { data } = await sb
         .from('profiles')
-        .select('full_name, phone')
+        .select('full_name, phone, role')
         .eq('id', user.id)
         .single()
 
       if (data) {
-        setFullName((data as { full_name: string; phone: string | null }).full_name ?? '')
-        setPhone((data as { full_name: string; phone: string | null }).phone ?? '')
+        const d = data as { full_name: string; phone: string | null; role: string | null }
+        setFullName(d.full_name ?? '')
+        setPhone(d.phone ?? '')
+        // Keep existing role if already set, otherwise fall back to metadata
+        setRole(d.role ?? user.user_metadata?.role ?? 'parent')
       } else {
         // Profile not yet created — prefill from auth metadata
         setFullName(user.user_metadata?.full_name ?? '')
+        setRole(user.user_metadata?.role ?? 'parent')
       }
       setFetching(false)
     }
@@ -54,6 +59,7 @@ export default function OnboardingStep1() {
         email:     user.email!,
         full_name: fullName.trim(),
         phone:     phone.trim() || null,
+        role,
       })
 
     setLoading(false)
