@@ -10,6 +10,14 @@ const MessageSchema = z.object({
 })
 
 export async function POST(req: Request) {
+  // Validate required env vars up-front
+  if (!process.env.GOOGLE_AI_API_KEY) {
+    return new Response(JSON.stringify({ error: 'GOOGLE_AI_API_KEY chưa được cấu hình' }), { status: 500 })
+  }
+  if (!process.env.UPSTASH_REDIS_REST_URL) {
+    return new Response(JSON.stringify({ error: 'UPSTASH_REDIS_REST_URL chưa được cấu hình' }), { status: 500 })
+  }
+
   try {
     const db = await getServerClient()
     const { data: { user } } = await db.auth.getUser()
