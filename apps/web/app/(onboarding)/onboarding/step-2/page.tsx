@@ -96,12 +96,19 @@ export default function OnboardingStep2() {
       if (insErr) { setError('Không thể lưu thông tin. Thử lại nhé.'); setLoading(false); return }
     } else if (role === 'bgh') {
       // Tạo trường + liên kết vào profile (BGH dashboard cần school_id)
+      // Sinh mã trường để giáo viên tham gia (6 ký tự, tránh ký tự dễ nhầm)
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+      const bytes = new Uint8Array(6)
+      crypto.getRandomValues(bytes)
+      const schoolCode = Array.from(bytes).map((b) => chars[b % chars.length]).join('')
+
       const { data: school, error: schoolErr } = await (sb as any)
         .from('schools')
         .insert({
-          name:     schoolName.trim(),
-          province: province.trim() || 'Hà Nội',
-          district: district.trim() || null,
+          name:      schoolName.trim(),
+          province:  province.trim() || 'Hà Nội',
+          district:  district.trim() || null,
+          join_code: schoolCode,
         })
         .select('id')
         .single()

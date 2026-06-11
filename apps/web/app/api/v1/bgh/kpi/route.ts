@@ -21,7 +21,7 @@ export const GET = withHandler(async (_req) => {
 
   const kpi = await withCache(CacheKeys.schoolKPI(schoolId), TTL.schoolKPI, async () => {
     const [schoolRes, childrenRes, scoresRes, classesRes] = await Promise.all([
-      db.from('schools').select('name, student_count').eq('id', schoolId).single(),
+      db.from('schools').select('name, student_count, join_code').eq('id', schoolId).single(),
       db.from('children').select('id', { count: 'exact', head: true }).eq('school_id', schoolId),
       db.from('score_records')
         .select('score, max_score')
@@ -34,7 +34,7 @@ export const GET = withHandler(async (_req) => {
 
     assertNoError(schoolRes.error)
 
-    const school = schoolRes.data as { name: string; student_count: number }
+    const school = schoolRes.data as { name: string; student_count: number; join_code: string }
     const totalStudents = childrenRes.count ?? 0
     const scores = (scoresRes.data ?? []) as { score: number; max_score: number }[]
     const avgScore = scores.length
@@ -44,6 +44,7 @@ export const GET = withHandler(async (_req) => {
     return {
       school_id:     schoolId,
       school_name:   school.name,
+      school_code:   school.join_code,
       total_students: totalStudents,
       avg_score:     avgScore,
       total_classes: (classesRes.data ?? []).length,

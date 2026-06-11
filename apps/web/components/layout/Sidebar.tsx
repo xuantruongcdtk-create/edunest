@@ -18,12 +18,13 @@ const PARENT_NAV: NavItem[]  = [
   { href: '/settings',           label: 'Cài đặt',      icon: '⚙' },
 ]
 const TEACHER_NAV: NavItem[] = [
-  { href: '/teacher/dashboard',  label: 'Tổng quan',    icon: '⊞' },
-  { href: '/teacher/classes',    label: 'Lớp học',      icon: '🏫' },
-  { href: '/teacher/students',   label: 'Học sinh',     icon: '👥' },
-  { href: '/teacher/quiz',       label: 'Bài kiểm tra', icon: '📝' },
-  { href: '/teacher/alerts',     label: 'Cảnh báo',     icon: '🔔' },
-  { href: '/settings',           label: 'Cài đặt',      icon: '⚙' },
+  { href: '/teacher/dashboard',   label: 'Tổng quan',    icon: '⊞' },
+  { href: '/teacher/classes',     label: 'Lớp học',      icon: '🏫' },
+  { href: '/teacher/join-school', label: 'Tham gia trường', icon: '🔗' },
+  { href: '/teacher/students',    label: 'Học sinh',     icon: '👥' },
+  { href: '/teacher/quiz',        label: 'Bài kiểm tra', icon: '📝' },
+  { href: '/teacher/alerts',      label: 'Cảnh báo',     icon: '🔔' },
+  { href: '/settings',            label: 'Cài đặt',      icon: '⚙' },
 ]
 const BGH_NAV: NavItem[] = [
   { href: '/bgh/dashboard',     label: 'Tổng quan',    icon: '⊞' },
