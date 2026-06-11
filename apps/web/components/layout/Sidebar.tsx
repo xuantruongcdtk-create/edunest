@@ -8,20 +8,22 @@ import { getBrowserClient } from '../../lib/supabase'
 interface NavItem { href: string; label: string; icon: string }
 
 const PARENT_NAV: NavItem[]  = [
-  { href: '/parent/dashboard',  label: 'Tổng quan',    icon: '⊞' },
-  { href: '/parent/scores',     label: 'Bảng điểm',    icon: '📊' },
-  { href: '/parent/quiz',       label: 'Bài kiểm tra', icon: '📝' },
-  { href: '/parent/coach',      label: 'EduCoach AI',  icon: '🤖' },
-  { href: '/parent/children',   label: 'Hồ sơ con',    icon: '👦' },
-  { href: '/parent/reports',    label: 'Báo cáo',      icon: '📄' },
-  { href: '/settings',          label: 'Cài đặt',      icon: '⚙' },
+  { href: '/parent/dashboard',   label: 'Tổng quan',    icon: '⊞' },
+  { href: '/parent/scores',      label: 'Bảng điểm',    icon: '📊' },
+  { href: '/parent/quiz',        label: 'Bài kiểm tra', icon: '📝' },
+  { href: '/parent/join-class',  label: 'Tham gia lớp', icon: '🏫' },
+  { href: '/parent/coach',       label: 'EduCoach AI',  icon: '🤖' },
+  { href: '/parent/children',    label: 'Hồ sơ con',    icon: '👦' },
+  { href: '/parent/reports',     label: 'Báo cáo',      icon: '📄' },
+  { href: '/settings',           label: 'Cài đặt',      icon: '⚙' },
 ]
 const TEACHER_NAV: NavItem[] = [
-  { href: '/teacher/dashboard', label: 'Tổng quan',    icon: '⊞' },
-  { href: '/teacher/students',  label: 'Học sinh',     icon: '👥' },
-  { href: '/teacher/quiz',      label: 'Bài kiểm tra', icon: '📝' },
-  { href: '/teacher/alerts',    label: 'Cảnh báo',     icon: '🔔' },
-  { href: '/settings',          label: 'Cài đặt',      icon: '⚙' },
+  { href: '/teacher/dashboard',  label: 'Tổng quan',    icon: '⊞' },
+  { href: '/teacher/classes',    label: 'Lớp học',      icon: '🏫' },
+  { href: '/teacher/students',   label: 'Học sinh',     icon: '👥' },
+  { href: '/teacher/quiz',       label: 'Bài kiểm tra', icon: '📝' },
+  { href: '/teacher/alerts',     label: 'Cảnh báo',     icon: '🔔' },
+  { href: '/settings',           label: 'Cài đặt',      icon: '⚙' },
 ]
 const BGH_NAV: NavItem[] = [
   { href: '/bgh/dashboard',     label: 'Tổng quan',    icon: '⊞' },
