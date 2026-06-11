@@ -5,13 +5,21 @@ import { getBrowserClient }                  from '../../../../lib/supabase'
 import { SchoolKPIGrid }                     from '../../../../components/bgh/SchoolKPIGrid'
 import { ClassRankTable }                    from '../../../../components/bgh/ClassRankTable'
 
+interface ClassRow {
+  id:            string
+  name:          string
+  grade?:        number
+  student_count: number
+  join_code?:    string
+}
+
 interface KPIData {
   school_id:      string
   school_name:    string
   total_students: number
   avg_score:      number
   total_classes:  number
-  classes:        { id: string; name: string; student_count: number }[]
+  classes:        ClassRow[]
 }
 
 interface ClassAvg { [classId: string]: number }
@@ -28,6 +36,13 @@ export default function BghClassesPage() {
   const [newGrade,  setNewGrade]  = useState(10)
   const [newYear,   setNewYear]   = useState('2025-2026')
   const [saving,    setSaving]    = useState(false)
+  const [copiedId,  setCopiedId]  = useState<string | null>(null)
+
+  function copyCode(code: string, id: string) {
+    navigator.clipboard.writeText(code)
+    setCopiedId(id)
+    setTimeout(() => setCopiedId(null), 2000)
+  }
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -141,6 +156,51 @@ export default function BghClassesPage() {
           <div className="h-64 bg-gray-100 rounded-card animate-pulse" />
         ) : (
           <ClassRankTable classes={classesWithAvg} />
+        )}
+
+        {/* Mã tham gia lớp — phát cho phụ huynh để học sinh vào lớp */}
+        {!loading && (kpi?.classes.length ?? 0) > 0 && (
+          <div className="bg-white rounded-card shadow-card overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100">
+              <h3 className="font-display font-semibold text-gray-800">Mã tham gia lớp</h3>
+              <p className="text-xs text-gray-400 mt-0.5">
+                Gửi mã cho phụ huynh → phụ huynh vào “Tham gia lớp” nhập mã → học sinh vào lớp (sĩ số tự cập nhật)
+              </p>
+            </div>
+            <div className="divide-y divide-gray-50">
+              {(kpi?.classes ?? []).map((cls) => (
+                <div key={cls.id} className="px-6 py-3.5 flex items-center gap-4">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900">
+                      {cls.name}
+                      {cls.grade != null && (
+                        <span className="ml-1.5 text-xs text-gray-400 font-normal">Lớp {cls.grade}</span>
+                      )}
+                    </p>
+                    <p className="text-xs text-gray-400">{cls.student_count} học sinh</p>
+                  </div>
+                  {cls.join_code ? (
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="font-mono font-bold text-base text-gray-900 tracking-[0.18em] bg-gray-50 border border-gray-100 rounded-input px-3 py-1.5">
+                        {cls.join_code}
+                      </span>
+                      <button
+                        onClick={() => copyCode(cls.join_code!, cls.id)}
+                        className={`text-xs px-2.5 py-1.5 rounded-input border transition-colors ${
+                          copiedId === cls.id
+                            ? 'bg-success/10 border-success/20 text-success font-semibold'
+                            : 'bg-white border-gray-200 text-gray-600 hover:border-[#185FA5]/40 hover:text-[#185FA5]'
+                        }`}>
+                        {copiedId === cls.id ? '✓ Đã copy' : '📋 Copy'}
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="text-xs text-gray-300 flex-shrink-0">Chưa có mã</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
         )}
       </div>
 

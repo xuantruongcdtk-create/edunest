@@ -29,7 +29,7 @@ export const GET = withHandler(async (_req) => {
           'child_id',
           (await db.from('children').select('id').eq('school_id', schoolId)).data?.map((c: { id: string }) => c.id) ?? [],
         ),
-      db.from('classes').select('id, name, student_count').eq('school_id', schoolId).order('name'),
+      db.from('classes').select('id, name, grade, student_count, join_code').eq('school_id', schoolId).order('name'),
     ])
 
     assertNoError(schoolRes.error)
