@@ -46,11 +46,18 @@ export async function checkAIRateLimit(userId: string, action: AIAction): Promis
   const { max, windowSecs } = RATE_LIMITS[action]
   const key = CacheKeys.rateLimit(userId, `ai:${action}`)
 
-  const current = await redis.incr(key)
-  if (current === 1) await redis.expire(key, windowSecs)
-  if (current > max) {
-    const ttl = await redis.ttl(key)
-    throw new RateLimitError(ttl > 0 ? ttl : windowSecs)
+  try {
+    const current = await redis.incr(key)
+    if (current === 1) await redis.expire(key, windowSecs)
+    if (current > max) {
+      const ttl = await redis.ttl(key)
+      throw new RateLimitError(ttl > 0 ? ttl : windowSecs)
+    }
+  } catch (err) {
+    // If it's a RateLimitError, re-throw it
+    if (err instanceof RateLimitError) throw err
+    // Otherwise (Redis misconfigured / NOPERM), log and allow request through
+    console.warn('[AI rate limit] Redis error, skipping rate check:', String(err))
   }
 }
 
