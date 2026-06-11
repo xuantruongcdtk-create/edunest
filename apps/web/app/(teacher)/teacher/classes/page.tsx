@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { getBrowserClient } from '../../../../../lib/supabase'
+import { getBrowserClient } from '../../../../lib/supabase'
 
 interface Class {
   id:            string
