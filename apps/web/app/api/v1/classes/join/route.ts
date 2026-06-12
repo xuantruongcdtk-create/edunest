@@ -27,15 +27,11 @@ export const POST = withHandler(async (req) => {
     .single()
   if (!child) throw new UnauthorizedError('Không tìm thấy hồ sơ con')
 
-  // Find class by join code (case-insensitive)
-  const { data: cls } = await (db as any)
-    .from('classes')
-    .select(`
-      id, name, grade,
-      teacher:profiles!teacher_id ( full_name )
-    `)
-    .eq('join_code', joinCode.toUpperCase().trim())
-    .single()
+  // Tra cứu lớp theo mã qua hàm SECURITY DEFINER (RLS chặn phụ huynh đọc lớp chưa tham gia)
+  const { data: clsRows } = await (db as any).rpc('find_class_by_join_code', {
+    p_code: joinCode.toUpperCase().trim(),
+  })
+  const cls = ((clsRows ?? []) as { id: string; name: string; grade: number; teacher_name: string }[])[0]
 
   if (!cls) throw new ValidationError('Mã lớp không tồn tại. Vui lòng kiểm tra lại mã giáo viên cung cấp.')
 
@@ -43,27 +39,27 @@ export const POST = withHandler(async (req) => {
   const { data: existing } = await (db as any)
     .from('class_memberships')
     .select('id')
-    .eq('class_id', (cls as any).id)
+    .eq('class_id', cls.id)
     .eq('child_id', childId)
     .maybeSingle()
 
   if (existing) {
     throw new ValidationError(
-      `${(child as any).full_name} đã là thành viên của lớp ${(cls as any).name} rồi.`,
+      `${(child as any).full_name} đã là thành viên của lớp ${cls.name} rồi.`,
     )
   }
 
   // Enroll child
   const { error } = await (db as any)
     .from('class_memberships')
-    .insert({ class_id: (cls as any).id, child_id: childId })
+    .insert({ class_id: cls.id, child_id: childId })
 
   if (error) throw new Error(error.message)
 
   return ok({
-    className:   (cls as any).name,
-    classGrade:  (cls as any).grade,
-    teacherName: (cls as any).teacher?.full_name ?? 'Giáo viên',
+    className:   cls.name,
+    classGrade:  cls.grade,
+    teacherName: cls.teacher_name ?? 'Giáo viên',
     childName:   (child as any).full_name,
   })
 })
