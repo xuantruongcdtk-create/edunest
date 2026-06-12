@@ -61,7 +61,7 @@ export default function ChildrenPage() {
 
     // Dùng user của phiên client (khớp RLS + thao tác thêm con) thay vì userId từ context server,
     // tránh lệch session khiến lọc nhầm parent_id → rỗng dù đã có con.
-    const { data: { user } } = await sb.auth.getUser()
+    const user = (await sb.auth.getSession()).data.session?.user
     if (!user) { setChildren([]); setLoading(false); return }
 
     const { data: kids } = await sb
@@ -172,7 +172,7 @@ export default function ChildrenPage() {
 
     if (modal === 'add') {
       if (children.length >= 5) { setError('Tối đa 5 học sinh trên tài khoản.'); setSaving(false); return }
-      const { data: { user } } = await sb.auth.getUser()
+      const user = (await sb.auth.getSession()).data.session?.user
       if (!user) { setError('Phiên đăng nhập hết hạn. Đăng nhập lại.'); setSaving(false); return }
       const { error: insErr } = await sb.from('children').insert({
         parent_id:     user.id,

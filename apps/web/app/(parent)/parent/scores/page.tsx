@@ -98,7 +98,7 @@ function ScoresPageInner() {
   useEffect(() => {
     async function load() {
       const sb = getBrowserClient()
-      const { data: { user } } = await sb.auth.getUser()
+      const user = (await sb.auth.getSession()).data.session?.user
       if (!user) return
 
       const { data: kids } = await sb
@@ -166,7 +166,7 @@ function ScoresPageInner() {
 
     setSaving(true); setError(null)
     const sb = getBrowserClient()
-    const { data: { user } } = await sb.auth.getUser()
+    const user = (await sb.auth.getSession()).data.session?.user
     if (!user) { setError('Phiên đăng nhập hết hạn.'); setSaving(false); return }
     const { error: insErr } = await sb.from('score_records').insert({
       child_id:      activeId,

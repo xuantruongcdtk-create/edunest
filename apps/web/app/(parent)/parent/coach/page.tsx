@@ -16,7 +16,7 @@ function CoachPageInner() {
   useEffect(() => {
     async function load() {
       const sb = getBrowserClient()
-      const { data: { user } } = await sb.auth.getUser()
+      const user = (await sb.auth.getSession()).data.session?.user
       if (!user) return
 
       const { data } = await sb

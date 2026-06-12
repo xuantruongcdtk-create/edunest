@@ -79,7 +79,7 @@ export default function ParentQuizAttemptPage({ params }: { params: { id: string
   useEffect(() => {
     async function load() {
       const sb = getBrowserClient()
-      const { data: { user } } = await sb.auth.getUser()
+      const user = (await sb.auth.getSession()).data.session?.user
       if (!user) { router.push('/login'); return }
 
       const [{ data: quizData, error: qe }, { data: childData }] = await Promise.all([

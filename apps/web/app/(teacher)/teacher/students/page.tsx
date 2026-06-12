@@ -58,7 +58,7 @@ export default function TeacherStudentsPage() {
   const loadStudents = useCallback(async () => {
     setLoading(true)
     const sb = getBrowserClient()
-    const { data: { user } } = await sb.auth.getUser()
+    const user = (await sb.auth.getSession()).data.session?.user
     if (!user) { setStudents([]); setLoading(false); return }
 
     // Lớp do giáo viên này chủ nhiệm

@@ -129,7 +129,7 @@ export default function QuizDetailPage({ params }: { params: { id: string } }) {
     async function load() {
       try {
         const sb = getBrowserClient()
-        const { data: { user } } = await sb.auth.getUser()
+        const user = (await sb.auth.getSession()).data.session?.user
         if (!user) { router.push('/login'); return }
 
         const { data: quizData, error } = await sb
@@ -164,7 +164,7 @@ export default function QuizDetailPage({ params }: { params: { id: string } }) {
     setAssignLoading(true)
     try {
       const sb = getBrowserClient()
-      const { data: { user } } = await sb.auth.getUser()
+      const user = (await sb.auth.getSession()).data.session?.user
       if (!user) return
 
       const [{ data: classData }, { data: assignData }] = await Promise.all([

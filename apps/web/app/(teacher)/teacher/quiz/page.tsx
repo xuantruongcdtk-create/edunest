@@ -417,7 +417,7 @@ export default function TeacherQuizPage() {
   const loadQuizzes = useCallback(async () => {
     setLoading(true)
     const sb = getBrowserClient()
-    const { data: { user } } = await sb.auth.getUser()
+    const user = (await sb.auth.getSession()).data.session?.user
     if (!user) { setQuizzes([]); setLoading(false); return }
 
     const { data } = await sb

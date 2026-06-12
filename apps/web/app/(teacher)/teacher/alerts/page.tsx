@@ -49,7 +49,7 @@ export default function TeacherAlertsPage() {
   const loadAlerts = useCallback(async () => {
     setLoading(true)
     const sb = getBrowserClient()
-    const { data: { user } } = await sb.auth.getUser()
+    const user = (await sb.auth.getSession()).data.session?.user
     if (!user) { setAlerts([]); setLoading(false); return }
 
     const { data } = await sb
@@ -83,7 +83,7 @@ export default function TeacherAlertsPage() {
     if (unreadIds.length === 0) return
 
     const sb = getBrowserClient()
-    const { data: { user } } = await sb.auth.getUser()
+    const user = (await sb.auth.getSession()).data.session?.user
     if (!user) return
     await sb.from('alerts').update({ is_read: true, read_at: new Date().toISOString() }).eq('user_id', user.id).eq('is_read', false)
     setAlerts((prev) => prev.map((a) => ({ ...a, is_read: true })))

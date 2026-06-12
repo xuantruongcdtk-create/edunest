@@ -23,7 +23,7 @@ export default function SettingsPage() {
   useEffect(() => {
     async function load() {
       const sb = getBrowserClient()
-      const { data: { user } } = await sb.auth.getUser()
+      const user = (await sb.auth.getSession()).data.session?.user
       if (!user) return
 
       const { data } = await sb
@@ -45,7 +45,7 @@ export default function SettingsPage() {
     setError(null); setSaving(true); setSaved(false)
 
     const sb = getBrowserClient()
-    const { data: { user } } = await sb.auth.getUser()
+    const user = (await sb.auth.getSession()).data.session?.user
     if (!user) { setError('Phiên đăng nhập hết hạn.'); setSaving(false); return }
 
     const { error: uErr } = await sb

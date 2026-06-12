@@ -31,7 +31,7 @@ export default function ParentJoinClassPage() {
       const sb = getBrowserClient()
       // Dùng user của phiên client (khớp RLS + API join) thay vì userId từ context server,
       // tránh trường hợp lệch session khiến query lọc nhầm parent_id → rỗng.
-      const { data: { user } } = await sb.auth.getUser()
+      const user = (await sb.auth.getSession()).data.session?.user
       if (!user) { setChildrenLoading(false); return }
 
       const { data } = await sb

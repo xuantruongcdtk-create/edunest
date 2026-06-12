@@ -198,7 +198,7 @@ export default function ParentReportsPage() {
   useEffect(() => {
     async function load() {
       const sb = getBrowserClient()
-      const { data: { user } } = await sb.auth.getUser()
+      const user = (await sb.auth.getSession()).data.session?.user
       if (!user) { setLoading(false); return }
 
       const { data } = await sb

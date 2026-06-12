@@ -18,7 +18,7 @@ export default function TeacherJoinSchoolPage() {
 
   async function loadCurrent() {
     const sb = getBrowserClient()
-    const { data: { user } } = await sb.auth.getUser()
+    const user = (await sb.auth.getSession()).data.session?.user
     if (!user) { setLoading(false); return }
 
     const { data: profile } = await sb
@@ -44,7 +44,7 @@ export default function TeacherJoinSchoolPage() {
     setSaving(true); setError(null); setSuccess(null)
 
     const sb = getBrowserClient()
-    const { data: { user } } = await sb.auth.getUser()
+    const user = (await sb.auth.getSession()).data.session?.user
     if (!user) { setSaving(false); return }
 
     // Tìm trường theo mã (RLS cho phép mọi user đã đăng nhập đọc schools)

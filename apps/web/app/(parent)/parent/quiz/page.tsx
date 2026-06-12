@@ -55,7 +55,7 @@ export default function ParentQuizPage() {
   useEffect(() => {
     async function load() {
       const sb = getBrowserClient()
-      const { data: { user } } = await sb.auth.getUser()
+      const user = (await sb.auth.getSession()).data.session?.user
       if (!user) { setLoading(false); return }
 
       // Fetch qua quiz_assignments để lấy tên lớp + due_date theo assignment.
