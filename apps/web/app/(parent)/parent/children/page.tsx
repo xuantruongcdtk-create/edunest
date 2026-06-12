@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import Link                    from 'next/link'
 import { getBrowserClient }    from '../../../../lib/supabase'
-import { useUser }             from '../../../../lib/user-context'
 
 interface Child {
   id:            string
@@ -37,8 +36,6 @@ const GRADES = Array.from({ length: 12 }, (_, i) => i + 1)
 type ModalMode = 'add' | 'edit' | null
 
 export default function ChildrenPage() {
-  const { userId } = useUser()
-
   const [children,  setChildren]  = useState<Child[]>([])
   const [loading,   setLoading]   = useState(true)
   const [modal,     setModal]     = useState<ModalMode>(null)
@@ -54,16 +51,21 @@ export default function ChildrenPage() {
   const [formDOB,    setFormDOB]    = useState('')
   const [formSchool, setFormSchool] = useState('')
 
-  useEffect(() => { if (userId) loadChildren() }, [userId])
+  useEffect(() => { loadChildren() }, [])
 
   async function loadChildren() {
     setLoading(true)
     const sb = getBrowserClient()
 
+    // Dùng user của phiên client (khớp RLS + thao tác thêm con) thay vì userId từ context server,
+    // tránh lệch session khiến lọc nhầm parent_id → rỗng dù đã có con.
+    const { data: { user } } = await sb.auth.getUser()
+    if (!user) { setChildren([]); setLoading(false); return }
+
     const { data: kids } = await sb
       .from('children')
       .select('id, full_name, grade, date_of_birth, school_name, created_at')
-      .eq('parent_id', userId)
+      .eq('parent_id', user.id)
       .order('created_at')
 
     const list = (kids ?? []) as Omit<Child, 'avg_score' | 'score_count'>[]
@@ -116,8 +118,10 @@ export default function ChildrenPage() {
 
     if (modal === 'add') {
       if (children.length >= 5) { setError('Tối đa 5 học sinh trên tài khoản.'); setSaving(false); return }
+      const { data: { user } } = await sb.auth.getUser()
+      if (!user) { setError('Phiên đăng nhập hết hạn. Đăng nhập lại.'); setSaving(false); return }
       const { error: insErr } = await sb.from('children').insert({
-        parent_id:     userId,
+        parent_id:     user.id,
         full_name:     formName.trim(),
         grade:         formGrade,
         date_of_birth: dob,
