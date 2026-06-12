@@ -5,7 +5,7 @@ import { Reveal } from '../../components/Reveal'
 export const metadata: Metadata = {
   title: 'EduNest — Nền tảng học tập thông minh cho gia đình Việt',
   description:
-    'Theo dõi kết quả học tập, nhận tư vấn AI và kết nối với giáo viên của con. Dành cho phụ huynh K-12 Việt Nam.',
+    'Theo dõi kết quả học tập, nhận tư vấn AI Coach và kết nối với giáo viên của con. Dành cho phụ huynh, giáo viên và nhà trường K-12 Việt Nam.',
 }
 
 // ─── Nav ──────────────────────────────────────────────────────────────────────
@@ -20,7 +20,7 @@ function Navbar() {
         <div className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-600">
           <a href="#features" className="hover:text-primary transition-colors">Tính năng</a>
           <a href="#pricing"  className="hover:text-primary transition-colors">Bảng giá</a>
-          <a href="#about"    className="hover:text-primary transition-colors">Về chúng tôi</a>
+          <a href="#roles"    className="hover:text-primary transition-colors">Dành cho ai</a>
         </div>
         <div className="flex items-center gap-3">
           <Link
@@ -51,7 +51,7 @@ function Hero() {
 
       <div className="relative max-w-6xl mx-auto px-6 text-center">
         <div className="inline-flex items-center gap-2 bg-primary/10 text-primary text-xs font-semibold px-3 py-1.5 rounded-full mb-6">
-          <span>✨</span> Ra mắt tháng 7/2026 — Đặt chỗ miễn phí ngay
+          <span>✨</span> Ra mắt tháng 7/2026 — Đăng ký sớm để dùng miễn phí
         </div>
 
         <h1 className="font-display font-extrabold text-5xl md:text-6xl text-gray-900 leading-tight mb-6">
@@ -61,7 +61,7 @@ function Hero() {
 
         <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-10 leading-relaxed">
           EduNest giúp phụ huynh nắm bắt kết quả học tập, phát hiện sớm nguy cơ kiệt sức
-          và nhận tư vấn từ AI Coach — mọi lúc, mọi nơi.
+          và nhận tư vấn từ AI Coach — đồng thời kết nối với giáo viên và nhà trường của con.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-14">
@@ -95,10 +95,10 @@ function Hero() {
             <div className="p-6 bg-gray-50">
               <div className="flex gap-4 mb-4">
                 {[
-                  { label: 'Điểm TB',   value: '8.4', color: 'text-primary',  bg: 'bg-primary/8' },
-                  { label: 'Môn học',   value: '10',   color: 'text-accent',   bg: 'bg-accent/8' },
-                  { label: 'Quiz đã làm', value: '24', color: 'text-success',  bg: 'bg-success/8' },
-                  { label: 'Cảnh báo', value: '0',    color: 'text-warning',  bg: 'bg-warning/8' },
+                  { label: 'Điểm TB',      value: '8.4', color: 'text-primary',  bg: 'bg-primary/8' },
+                  { label: 'Điểm quiz TB', value: '8.0', color: 'text-accent',   bg: 'bg-accent/8' },
+                  { label: 'Quiz đã làm',  value: '24',  color: 'text-success',  bg: 'bg-success/8' },
+                  { label: 'Cảnh báo',     value: '0',   color: 'text-warning',  bg: 'bg-warning/8' },
                 ].map((stat) => (
                   <div key={stat.label} className={`flex-1 rounded-xl ${stat.bg} p-4`}>
                     <p className="text-xs text-gray-500">{stat.label}</p>
@@ -141,27 +141,32 @@ function Hero() {
             </div>
           </div>
         </div>
+
+        <p className="text-xs text-gray-400 mt-16 md:mt-8">* Giao diện minh hoạ sản phẩm</p>
       </div>
     </section>
   )
 }
 
-// ─── Social Proof ──────────────────────────────────────────────────────────────
-function SocialProof() {
-  const stats = [
-    { value: '10.000+', label: 'Phụ huynh tin dùng' },
-    { value: '500+',    label: 'Giáo viên tham gia' },
-    { value: '50+',     label: 'Trường học đối tác' },
-    { value: '98%',     label: 'Hài lòng sau 1 tháng' },
+// ─── Trust signals ───────────────────────────────────────────────────────────
+function TrustBar() {
+  const items = [
+    { icon: '🔒', title: 'Mã hóa AES-256',      sub: 'Dữ liệu của con được bảo vệ' },
+    { icon: '🛡️', title: 'Nghị định 13/2023',   sub: 'Tuân thủ bảo vệ dữ liệu cá nhân' },
+    { icon: '🤖', title: 'Google Gemini',        sub: 'AI Coach & chấm bài tự động' },
+    { icon: '🇻🇳', title: 'Lớp 1–12 · 10+ môn',  sub: 'Thiết kế cho học sinh Việt' },
   ]
   return (
     <section className="bg-white border-y border-gray-100 py-12">
       <div className="max-w-6xl mx-auto px-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-          {stats.map((s) => (
-            <div key={s.label}>
-              <p className="font-display font-extrabold text-3xl text-primary">{s.value}</p>
-              <p className="text-sm text-gray-500 mt-1">{s.label}</p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          {items.map((s) => (
+            <div key={s.title} className="flex items-center gap-3 justify-center md:justify-start">
+              <span className="text-2xl flex-shrink-0">{s.icon}</span>
+              <div>
+                <p className="font-display font-bold text-gray-900 text-sm">{s.title}</p>
+                <p className="text-xs text-gray-500 mt-0.5">{s.sub}</p>
+              </div>
             </div>
           ))}
         </div>
@@ -176,42 +181,42 @@ function Features() {
     {
       icon:  '📊',
       title: 'Theo dõi điểm số thông minh',
-      desc:  'Nhập điểm thủ công hoặc scan PDF bằng AI. Biểu đồ xu hướng theo tuần, tháng, học kỳ.',
+      desc:  'Nhập điểm theo từng môn, loại bài và học kỳ. Biểu đồ xu hướng, tách riêng điểm nhập tay và điểm quiz.',
       tag:   'Phụ huynh',
       color: 'bg-primary/8 text-primary',
     },
     {
       icon:  '🤖',
       title: 'EduCoach AI cá nhân hóa',
-      desc:  'AI coach phân tích từng con, gợi ý phương pháp học phù hợp, cảnh báo nguy cơ kiệt sức sớm.',
+      desc:  'AI Coach (Google Gemini) phân tích từng con, gợi ý phương pháp học phù hợp và trả lời mọi câu hỏi của bạn.',
       tag:   'AI',
       color: 'bg-accent/8 text-accent',
     },
     {
       icon:  '🧬',
       title: 'Learning DNA',
-      desc:  'Hệ thống phân tích phong cách học (thị giác, thính giác, vận động) và điểm mạnh/yếu của từng học sinh.',
+      desc:  'Phân tích phong cách học, độ ổn định, nguy cơ kiệt sức và điểm mạnh/yếu của từng con.',
       tag:   'Độc quyền',
       color: 'bg-success/8 text-success',
     },
     {
       icon:  '📝',
-      title: 'Hệ thống quiz AI',
-      desc:  'Giáo viên tạo bài kiểm tra tự động bằng AI theo chương trình BGDĐT. Học sinh làm trực tiếp trên app.',
+      title: 'Quiz AI — trắc nghiệm & tự luận',
+      desc:  'Giáo viên tạo quiz bằng AI hoặc tải lên từ Word, Excel, PDF. Hỗ trợ tự luận và AI tự chấm điểm cho câu tự luận.',
       tag:   'Giáo viên',
       color: 'bg-warning/8 text-warning',
     },
     {
       icon:  '🏫',
       title: 'Quản trị trường học',
-      desc:  'Ban giám hiệu theo dõi KPI toàn trường, xếp hạng lớp học, báo cáo học kỳ PDF tự động.',
+      desc:  'Ban giám hiệu theo dõi KPI toàn trường, xếp hạng lớp học và tiến độ học tập trong một dashboard duy nhất.',
       tag:   'BGH',
       color: 'bg-bgh-blue/8 text-bgh-blue',
     },
     {
       icon:  '🔔',
       title: 'Cảnh báo sớm thông minh',
-      desc:  'Hệ thống phát hiện điểm giảm bất thường, bỏ quiz nhiều, nguy cơ kiệt sức và thông báo ngay.',
+      desc:  'Tự động phát hiện điểm giảm bất thường, nguy cơ kiệt sức và thông báo ngay cho phụ huynh, giáo viên.',
       tag:   'Tự động',
       color: 'bg-danger/8 text-danger',
     },
@@ -255,10 +260,10 @@ function Features() {
 // ─── How it works ──────────────────────────────────────────────────────────────
 function HowItWorks() {
   const steps = [
-    { n: '01', title: 'Đăng ký tài khoản',   desc: 'Tạo tài khoản miễn phí trong 2 phút, thêm thông tin của con.' },
-    { n: '02', title: 'Nhập dữ liệu học tập', desc: 'Nhập điểm thủ công hoặc scan phiếu điểm PDF bằng tính năng OCR.' },
-    { n: '03', title: 'AI phân tích',          desc: 'Hệ thống tự động tạo Learning DNA, gửi báo cáo hàng tuần.' },
-    { n: '04', title: 'Hành động kịp thời',   desc: 'Nhận cảnh báo sớm, chat với EduCoach AI để có kế hoạch học phù hợp.' },
+    { n: '01', title: 'Đăng ký tài khoản',     desc: 'Tạo tài khoản miễn phí trong 2 phút và thêm thông tin của con.' },
+    { n: '02', title: 'Nhập điểm & vào lớp',   desc: 'Nhập điểm các môn, hoặc nhập mã lớp của giáo viên để kết nối con với lớp học.' },
+    { n: '03', title: 'AI phân tích',          desc: 'Hệ thống tạo Learning DNA, tổng hợp báo cáo tuần và phát hiện cảnh báo sớm.' },
+    { n: '04', title: 'Hành động kịp thời',    desc: 'Nhận cảnh báo, chat với EduCoach AI và làm quiz được giao ngay trên app.' },
   ]
 
   return (
@@ -297,62 +302,58 @@ function Pricing() {
       period:   '/tháng',
       highlight: false,
       features: [
-        '1 học sinh',
-        'Theo dõi điểm cơ bản',
-        '5 lần/tuần chat với AI Coach',
-        'Báo cáo hàng tháng',
+        '3 bộ quiz AI mỗi tháng',
+        'Theo dõi điểm & biểu đồ cơ bản',
+        '10 tin nhắn AI Coach / tháng',
+        '1 hồ sơ con',
       ],
-      cta: 'Bắt đầu ngay',
+      cta: 'Bắt đầu miễn phí',
       href: '/register',
     },
     {
       name:     'Cơ bản',
       price:    '99.000',
       period:   '/tháng',
-      highlight: false,
+      highlight: true,
+      badge:    'Phổ biến nhất',
       features: [
-        'Tối đa 3 học sinh',
-        'Theo dõi toàn bộ môn học',
-        '20 lần/ngày chat AI Coach',
-        'Learning DNA đầy đủ',
-        'Cảnh báo thông minh',
-        'Báo cáo PDF hàng tuần',
+        'Quiz AI không giới hạn',
+        'Phân tích điểm & biểu đồ đầy đủ',
+        'Cảnh báo học tập sớm',
+        'Tối đa 3 hồ sơ con',
+        'Dùng thử 7 ngày miễn phí',
       ],
-      cta: 'Dùng thử 14 ngày',
+      cta: 'Dùng thử 7 ngày',
       href: '/register?plan=basic',
     },
     {
       name:     'Nâng cao',
       price:    '199.000',
       period:   '/tháng',
-      highlight: true,
-      badge:    'Phổ biến nhất',
+      highlight: false,
       features: [
-        'Không giới hạn học sinh',
-        'Tất cả tính năng Cơ bản',
-        'Chat AI Coach không giới hạn',
-        'OCR scan phiếu điểm PDF',
-        'Kết nối giáo viên & trường',
-        'Hỗ trợ ưu tiên 24/7',
+        'Mọi tính năng gói Cơ bản',
+        'AI Coach 24/7 không giới hạn',
+        'Learning DNA của con',
+        'Báo cáo tuần chi tiết',
+        'Tối đa 5 hồ sơ con',
       ],
-      cta: 'Dùng thử 14 ngày',
+      cta: 'Đăng ký Nâng cao',
       href: '/register?plan=pro',
     },
     {
       name:     'Trường học',
-      price:    'Liên hệ',
-      period:   '',
+      price:    '990.000',
+      period:   '/năm',
       highlight: false,
       features: [
-        'Tất cả tính năng Nâng cao',
         'Dashboard BGH & giáo viên',
         'Quản lý lớp học, học sinh',
         'Báo cáo toàn trường',
-        'Tích hợp hệ thống trường',
-        'Account manager riêng',
+        'Hỗ trợ triển khai',
       ],
-      cta: 'Liên hệ tư vấn',
-      href: 'mailto:school@edunest.vn',
+      cta: 'Đăng ký cho trường',
+      href: '/register?plan=school',
     },
   ]
 
@@ -365,7 +366,7 @@ function Pricing() {
             Phù hợp với mọi gia đình
           </h2>
           <p className="text-gray-500 max-w-lg mx-auto">
-            Dùng thử miễn phí 14 ngày, không cần thẻ tín dụng. Hủy bất cứ lúc nào.
+            Bắt đầu miễn phí, không cần thẻ tín dụng. Nâng cấp khi bạn cần thêm insight và AI Coach.
           </p>
         </div>
 
@@ -375,12 +376,12 @@ function Pricing() {
               key={plan.name}
               className={`relative rounded-card p-6 ${
                 plan.highlight
-                  ? 'bg-primary text-white shadow-2xl shadow-primary/30 scale-105'
+                  ? 'bg-primary text-white shadow-2xl shadow-primary/30 lg:scale-105'
                   : 'bg-white shadow-card'
               }`}
             >
               {plan.badge && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-warning text-white text-xs font-bold px-3 py-1 rounded-full">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-warning text-white text-xs font-bold px-3 py-1 rounded-full whitespace-nowrap">
                   {plan.badge}
                 </div>
               )}
@@ -390,7 +391,7 @@ function Pricing() {
               </p>
               <div className="flex items-end gap-1 mb-1">
                 <span className={`font-display font-extrabold text-3xl ${plan.highlight ? 'text-white' : 'text-gray-900'}`}>
-                  {plan.price === '0' ? 'Miễn phí' : plan.price === 'Liên hệ' ? 'Liên hệ' : `₫${plan.price}`}
+                  {plan.price === '0' ? 'Miễn phí' : `₫${plan.price}`}
                 </span>
               </div>
               {plan.period && (
@@ -419,62 +420,68 @@ function Pricing() {
             </div>
           ))}
         </div>
+
+        <p className="text-center text-sm text-gray-400 mt-8">
+          Xem chi tiết tại <Link href="/pricing" className="text-primary font-semibold hover:underline">trang bảng giá</Link>.
+          Thanh toán qua MoMo & VNPAY.
+        </p>
       </div>
     </section>
   )
 }
 
-// ─── Testimonials ─────────────────────────────────────────────────────────────
-function Testimonials() {
-  const items = [
+// ─── Value by role ──────────────────────────────────────────────────────────────
+function RoleValue() {
+  const roles = [
     {
-      avatar: 'N',
-      name:   'Chị Nguyễn Thị Lan',
-      role:   'Phụ huynh · Hà Nội',
-      text:   'Trước đây tôi không biết con học thế nào cho đến khi nhận phiếu điểm. Giờ với EduNest, tôi biết ngay khi con gặp khó khăn và có thể hỗ trợ kịp thời.',
+      icon:  '👨‍👩‍👧',
+      tag:   'Phụ huynh',
+      color: 'bg-primary/8 text-primary',
+      desc:  'Hiểu con đang học thế nào trước cả khi nhận phiếu điểm — và biết phải làm gì.',
+      points: ['Bảng điểm & biểu đồ theo môn', 'Báo cáo tuần & cảnh báo sớm', 'AI Coach tư vấn mọi lúc'],
     },
     {
-      avatar: 'T',
-      name:   'Thầy Trần Văn Hùng',
-      role:   'Giáo viên Toán · THPT Chu Văn An',
-      text:   'Tính năng tạo quiz AI giúp tôi tiết kiệm 2 tiếng mỗi tuần. Học sinh cũng hứng thú hơn vì bài tập đa dạng và phù hợp với từng em.',
+      icon:  '👩‍🏫',
+      tag:   'Giáo viên',
+      color: 'bg-warning/8 text-warning',
+      desc:  'Tạo và chấm bài nhanh hơn, dành thời gian cho việc dạy thay vì làm thủ công.',
+      points: ['Tạo quiz AI trong vài giây', 'Trắc nghiệm + tự luận, AI tự chấm', 'Quản lý lớp bằng mã tham gia'],
     },
     {
-      avatar: 'M',
-      name:   'Cô Phạm Thị Mai',
-      role:   'Hiệu phó · Trường TH Đống Đa',
-      text:   'Dashboard trường học cho tôi cái nhìn tổng quan về toàn trường chỉ trong 5 phút. Báo cáo học kỳ giờ làm xong trong 1 ngày thay vì 1 tuần.',
+      icon:  '🏫',
+      tag:   'Ban giám hiệu',
+      color: 'bg-bgh-blue/8 text-bgh-blue',
+      desc:  'Nắm toàn cảnh chất lượng học tập của trường chỉ trong vài phút.',
+      points: ['KPI toàn trường', 'Xếp hạng & so sánh các lớp', 'Theo dõi tiến độ học tập'],
     },
   ]
 
   return (
-    <section className="py-24 bg-white">
+    <section id="roles" className="py-24 bg-white">
       <div className="max-w-6xl mx-auto px-6">
         <div className="text-center mb-14">
-          <span className="text-primary text-sm font-semibold uppercase tracking-wide">Đánh giá</span>
+          <span className="text-primary text-sm font-semibold uppercase tracking-wide">Dành cho ai</span>
           <h2 className="font-display font-extrabold text-4xl text-gray-900 mt-2">
-            Được tin dùng bởi hàng nghìn gia đình
+            Một nền tảng — cho cả gia đình và nhà trường
           </h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {items.map((t) => (
-            <div key={t.name} className="bg-gray-50 rounded-card p-6 shadow-card">
-              <div className="flex mb-3">
-                {[...Array(5)].map((_, i) => (
-                  <span key={i} className="text-warning text-sm">★</span>
+          {roles.map((r) => (
+            <div key={r.tag} className="bg-gray-50 rounded-card p-6 shadow-card hover:shadow-card-hover transition-shadow">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="text-3xl">{r.icon}</span>
+                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${r.color}`}>{r.tag}</span>
+              </div>
+              <p className="text-gray-700 text-sm leading-relaxed mb-5">{r.desc}</p>
+              <ul className="space-y-2.5">
+                {r.points.map((p) => (
+                  <li key={p} className="flex items-start gap-2 text-sm text-gray-600">
+                    <span className="text-primary mt-0.5 text-xs">✓</span>
+                    {p}
+                  </li>
                 ))}
-              </div>
-              <p className="text-gray-700 text-sm leading-relaxed mb-5">"{t.text}"</p>
-              <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-full bg-primary text-white flex items-center justify-center font-bold text-sm flex-shrink-0">
-                  {t.avatar}
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-gray-800">{t.name}</p>
-                  <p className="text-xs text-gray-500">{t.role}</p>
-                </div>
-              </div>
+              </ul>
             </div>
           ))}
         </div>
@@ -492,8 +499,8 @@ function CTA() {
           Sẵn sàng đồng hành cùng con?
         </h2>
         <p className="text-white/80 text-lg mb-10 leading-relaxed">
-          Tham gia cùng hơn 10.000 phụ huynh đang dùng EduNest để theo dõi và hỗ trợ
-          con học tập hiệu quả hơn mỗi ngày.
+          Đăng ký sớm hôm nay để trải nghiệm EduNest miễn phí ngay khi ra mắt tháng 7/2026,
+          và đồng hành cùng con học tập hiệu quả hơn mỗi ngày.
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link
@@ -509,7 +516,7 @@ function CTA() {
             Liên hệ đội ngũ
           </a>
         </div>
-        <p className="text-white/50 text-sm mt-6">Miễn phí 14 ngày · Không cần thẻ tín dụng · Hủy bất cứ lúc nào</p>
+        <p className="text-white/50 text-sm mt-6">Miễn phí khi ra mắt · Không cần thẻ tín dụng · Hủy bất cứ lúc nào</p>
       </div>
     </section>
   )
@@ -527,7 +534,7 @@ function Footer() {
               <span className="font-display font-extrabold text-xl text-white">EduNest</span>
             </div>
             <p className="text-sm leading-relaxed max-w-sm">
-              Nền tảng theo dõi học tập AI-powered cho gia đình K-12 Việt Nam.
+              Nền tảng theo dõi học tập ứng dụng AI cho gia đình K-12 Việt Nam.
               Kết nối phụ huynh, giáo viên và nhà trường trong một hệ sinh thái số.
             </p>
             <p className="text-xs mt-4 text-gray-600">
@@ -538,18 +545,20 @@ function Footer() {
           <div>
             <p className="text-white font-semibold text-sm mb-4">Sản phẩm</p>
             <ul className="space-y-2 text-sm">
-              {['PID Dashboard', 'Học Vị', 'EduCoach AI', 'Tính năng', 'Bảng giá'].map((item) => (
-                <li key={item}><a href="#" className="hover:text-white transition-colors">{item}</a></li>
-              ))}
+              <li><a href="#features" className="hover:text-white transition-colors">Tính năng</a></li>
+              <li><a href="#pricing" className="hover:text-white transition-colors">Bảng giá</a></li>
+              <li><a href="#roles" className="hover:text-white transition-colors">Dành cho ai</a></li>
+              <li><span className="text-gray-600">Học Vị · sắp ra mắt</span></li>
             </ul>
           </div>
 
           <div>
             <p className="text-white font-semibold text-sm mb-4">Công ty</p>
             <ul className="space-y-2 text-sm">
-              {['Về chúng tôi', 'Blog', 'Tuyển dụng', 'Chính sách bảo mật', 'Điều khoản sử dụng'].map((item) => (
-                <li key={item}><a href="#" className="hover:text-white transition-colors">{item}</a></li>
-              ))}
+              <li><a href="#about" className="hover:text-white transition-colors">Về chúng tôi</a></li>
+              <li><a href="mailto:hello@edunest.vn" className="hover:text-white transition-colors">Liên hệ</a></li>
+              <li><span className="text-gray-600">Chính sách bảo mật · sắp có</span></li>
+              <li><span className="text-gray-600">Điều khoản sử dụng · sắp có</span></li>
             </ul>
           </div>
         </div>
@@ -558,7 +567,6 @@ function Footer() {
           <p className="text-xs">Made with ❤️ in Vietnam · Hà Nội, Việt Nam</p>
           <div className="flex items-center gap-6 text-xs">
             <a href="mailto:hello@edunest.vn" className="hover:text-white transition-colors">hello@edunest.vn</a>
-            <a href="tel:+84" className="hover:text-white transition-colors">Hotline: 1800 xxxx</a>
           </div>
         </div>
       </div>
@@ -572,11 +580,11 @@ export default function LandingPage() {
     <main className="font-body">
       <Navbar />
       <Hero />
-      <Reveal><SocialProof /></Reveal>
+      <Reveal><TrustBar /></Reveal>
       <Reveal><Features /></Reveal>
       <Reveal><HowItWorks /></Reveal>
       <Reveal><Pricing /></Reveal>
-      <Reveal><Testimonials /></Reveal>
+      <Reveal><RoleValue /></Reveal>
       <Reveal><CTA /></Reveal>
       <Reveal><Footer /></Reveal>
     </main>

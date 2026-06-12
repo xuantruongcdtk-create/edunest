@@ -17,7 +17,7 @@ const FEATURES_PRO = [
   'Mọi tính năng gói Cơ bản',
   'AI Coach 24/7 không giới hạn',
   'Learning DNA™ của con',
-  'Báo cáo tuần & xuất PDF',
+  'Báo cáo tuần chi tiết',
   'Lên tới 5 hồ sơ con',
 ]
 
