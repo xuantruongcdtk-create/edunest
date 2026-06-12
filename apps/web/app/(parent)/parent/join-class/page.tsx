@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import Link                     from 'next/link'
 import { getBrowserClient }     from '../../../../lib/supabase'
-import { useUser }              from '../../../../lib/user-context'
 
 interface Child {
   id:        string
@@ -19,8 +18,6 @@ interface JoinResult {
 }
 
 export default function ParentJoinClassPage() {
-  const { userId } = useUser()
-
   const [code,            setCode]            = useState('')
   const [children,        setChildren]        = useState<Child[]>([])
   const [selectedChildId, setSelectedChildId] = useState('')
@@ -31,12 +28,16 @@ export default function ParentJoinClassPage() {
 
   useEffect(() => {
     async function load() {
-      if (!userId) return
       const sb = getBrowserClient()
+      // Dùng user của phiên client (khớp RLS + API join) thay vì userId từ context server,
+      // tránh trường hợp lệch session khiến query lọc nhầm parent_id → rỗng.
+      const { data: { user } } = await sb.auth.getUser()
+      if (!user) { setChildrenLoading(false); return }
+
       const { data } = await sb
         .from('children')
         .select('id, full_name, grade')
-        .eq('parent_id', userId)
+        .eq('parent_id', user.id)
         .order('full_name', { ascending: true })
       const kids = (data ?? []) as Child[]
       setChildren(kids)
@@ -44,7 +45,7 @@ export default function ParentJoinClassPage() {
       setChildrenLoading(false)
     }
     load()
-  }, [userId])
+  }, [])
 
   async function handleJoin() {
     if (!code.trim()) { setError('Vui lòng nhập mã lớp'); return }
