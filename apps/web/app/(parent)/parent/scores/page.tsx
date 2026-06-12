@@ -17,6 +17,16 @@ interface ScoreRecord {
 
 interface Child { id: string; full_name: string; grade: number }
 
+interface QuizResult {
+  id:           string
+  quiz_id:      string
+  title:        string
+  subject:      string
+  score:        number
+  max_score:    number
+  completed_at: string
+}
+
 const SUBJECTS = [
   { label: 'Toán',      value: 'math' },
   { label: 'Văn',       value: 'literature' },
@@ -73,6 +83,7 @@ function ScoresPageInner() {
   const [children,   setChildren]   = useState<Child[]>([])
   const [activeId,   setActiveId]   = useState<string | undefined>(urlChildId)
   const [scores,     setScores]     = useState<ScoreRecord[]>([])
+  const [quizResults, setQuizResults] = useState<QuizResult[]>([])
   const [loading,    setLoading]    = useState(true)
   const [showForm,   setShowForm]   = useState(false)
   const [saving,     setSaving]     = useState(false)
@@ -121,6 +132,26 @@ function ScoresPageInner() {
       .order('exam_date', { ascending: false })
 
     setScores((data ?? []) as ScoreRecord[])
+
+    // Kết quả bài kiểm tra (quiz_attempts) — nguồn riêng với điểm nhập tay
+    const { data: attempts } = await sb
+      .from('quiz_attempts')
+      .select('id, quiz_id, score, max_score, completed_at')
+      .eq('student_id', childId)
+      .order('completed_at', { ascending: false })
+    const atts = (attempts ?? []) as { id: string; quiz_id: string; score: number; max_score: number; completed_at: string }[]
+    const quizIds = Array.from(new Set(atts.map((a) => a.quiz_id)))
+    const quizInfo: Record<string, { title: string; subject: string }> = {}
+    if (quizIds.length > 0) {
+      const { data: quizzes } = await sb.from('quizzes').select('id, title, subject').in('id', quizIds)
+      for (const q of (quizzes ?? []) as { id: string; title: string; subject: string }[]) quizInfo[q.id] = { title: q.title, subject: q.subject }
+    }
+    setQuizResults(atts.map((a) => ({
+      ...a,
+      title:   quizInfo[a.quiz_id]?.title ?? 'Bài kiểm tra',
+      subject: quizInfo[a.quiz_id]?.subject ?? '',
+    })))
+
     setLoading(false)
   }
 
@@ -329,6 +360,45 @@ function ScoresPageInner() {
                   })}
                 </tbody>
               </table>
+            </div>
+          )}
+        </div>
+
+        {/* Kết quả bài kiểm tra (quiz) */}
+        <div className="bg-white rounded-card shadow-card overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-100">
+            <h2 className="font-display font-semibold text-gray-900">Bài kiểm tra đã làm</h2>
+            <p className="text-xs text-gray-400 mt-0.5">Kết quả các bài kiểm tra giáo viên giao</p>
+          </div>
+          {loading ? (
+            <div className="p-6 space-y-3">
+              {[1, 2].map((i) => <div key={i} className="h-10 bg-gray-100 rounded animate-pulse" />)}
+            </div>
+          ) : quizResults.length === 0 ? (
+            <div className="py-12 text-center">
+              <span className="text-4xl">📝</span>
+              <p className="text-gray-500 text-sm mt-3">Chưa làm bài kiểm tra nào.</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-50">
+              {quizResults.map((q) => {
+                const pct = Math.round((q.score / q.max_score) * 100)
+                const color = pct >= 80 ? 'text-success' : pct >= 50 ? 'text-warning' : 'text-danger'
+                return (
+                  <div key={q.id} className="px-6 py-3.5 flex items-center gap-4">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{q.title}</p>
+                      <p className="text-xs text-gray-400">
+                        {SUBJECT_LABEL[q.subject] ?? q.subject} · {new Date(q.completed_at).toLocaleDateString('vi-VN')}
+                      </p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className={`font-display font-bold text-lg ${color}`}>{pct}%</p>
+                      <p className="text-xs text-gray-400">{q.score}/{q.max_score} điểm</p>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           )}
         </div>

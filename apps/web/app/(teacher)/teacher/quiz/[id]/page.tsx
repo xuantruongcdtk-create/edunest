@@ -45,6 +45,16 @@ interface Assignment {
   class:    ClassItem
 }
 
+interface Submission {
+  id:                 string
+  student_id:         string
+  student_name:       string
+  score:              number
+  max_score:          number
+  time_taken_seconds: number
+  completed_at:       string
+}
+
 const SUBJ_LABEL: Record<string, string> = {
   math: 'Toán', literature: 'Văn', english: 'Anh', physics: 'Lý',
   chemistry: 'Hóa', biology: 'Sinh', history: 'Sử', geography: 'Địa',
@@ -97,6 +107,7 @@ export default function QuizDetailPage({ params }: { params: { id: string } }) {
   const [pendingDueDate, setPendingDueDate] = useState<string>('')
   const [assignMsg,      setAssignMsg]      = useState<string | null>(null)
   const [assignErr,      setAssignErr]      = useState<string | null>(null)
+  const [submissions,    setSubmissions]    = useState<Submission[]>([])
 
   useEffect(() => {
     async function load() {
@@ -153,6 +164,21 @@ export default function QuizDetailPage({ params }: { params: { id: string } }) {
 
       setClasses((classData ?? []) as ClassItem[])
       setAssignments((assignData ?? []) as Assignment[])
+
+      // Bài học sinh đã nộp (quiz_attempts) + tên học sinh
+      const { data: attData } = await (sb as any)
+        .from('quiz_attempts')
+        .select('id, student_id, score, max_score, time_taken_seconds, completed_at')
+        .eq('quiz_id', id)
+        .order('completed_at', { ascending: false })
+      const atts = (attData ?? []) as Omit<Submission, 'student_name'>[]
+      const studentIds = Array.from(new Set(atts.map((a) => a.student_id)))
+      const nameById: Record<string, string> = {}
+      if (studentIds.length > 0) {
+        const { data: kids } = await sb.from('children').select('id, full_name').in('id', studentIds)
+        for (const c of (kids ?? []) as { id: string; full_name: string }[]) nameById[c.id] = c.full_name
+      }
+      setSubmissions(atts.map((a) => ({ ...a, student_name: nameById[a.student_id] ?? 'Học sinh' })))
     } finally {
       setAssignLoading(false)
     }
@@ -496,6 +522,49 @@ export default function QuizDetailPage({ params }: { params: { id: string } }) {
                         </button>
                       </div>
                     )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* ── Bài đã nộp ──────────────────────────────────────────────────── */}
+        <div className="bg-white rounded-card shadow-card overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-100">
+            <h2 className="font-display font-semibold text-gray-900">
+              Bài đã nộp
+              <span className="ml-2 text-sm font-normal text-gray-400">({submissions.length})</span>
+            </h2>
+            <p className="text-xs text-gray-400 mt-0.5">Học sinh đã làm và nộp bài kiểm tra này</p>
+          </div>
+          {submissions.length === 0 ? (
+            <div className="py-12 text-center">
+              <span className="text-4xl">📭</span>
+              <p className="text-gray-500 text-sm mt-3">Chưa có học sinh nào nộp bài.</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-50">
+              {submissions.map((s) => {
+                const pct = Math.round((s.score / s.max_score) * 100)
+                const color = pct >= 80 ? 'text-success' : pct >= 50 ? 'text-warning' : 'text-danger'
+                const mins = Math.floor(s.time_taken_seconds / 60)
+                const secs = s.time_taken_seconds % 60
+                return (
+                  <div key={s.id} className="px-5 py-3.5 flex items-center gap-4">
+                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <span className="text-primary text-sm font-bold">{s.student_name.charAt(0).toUpperCase()}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{s.student_name}</p>
+                      <p className="text-xs text-gray-400">
+                        {new Date(s.completed_at).toLocaleDateString('vi-VN')} · {mins}:{secs.toString().padStart(2, '0')}
+                      </p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className={`font-display font-bold text-lg ${color}`}>{pct}%</p>
+                      <p className="text-xs text-gray-400">{s.score}/{s.max_score} điểm</p>
+                    </div>
                   </div>
                 )
               })}
