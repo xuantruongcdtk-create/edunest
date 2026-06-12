@@ -71,18 +71,30 @@ export default function ChildrenPage() {
 
     const list = (kids ?? []) as Omit<Child, 'avg_score' | 'score_count' | 'class_names'>[]
 
-    // Lấy lớp mỗi con đang tham gia (class_memberships → classes.name)
+    // Lấy lớp mỗi con đang tham gia — tách 2 query để tránh lỗi embed lồng
     const childIds = list.map((c) => c.id)
     const classMap: Record<string, string[]> = {}
     if (childIds.length > 0) {
-      const { data: cmRows } = await (sb as any)
+      const { data: cmRows } = await sb
         .from('class_memberships')
-        .select('child_id, classes!class_id(name)')
+        .select('child_id, class_id')
         .in('child_id', childIds)
-      for (const r of (cmRows ?? []) as { child_id: string; classes: { name: string } | null }[]) {
-        const nm = r.classes?.name
-        if (!nm) continue
-        ;(classMap[r.child_id] ??= []).push(nm)
+
+      const memberships = (cmRows ?? []) as { child_id: string; class_id: string }[]
+      const classIds = Array.from(new Set(memberships.map((m) => m.class_id)))
+
+      if (classIds.length > 0) {
+        const { data: classRows } = await sb
+          .from('classes')
+          .select('id, name')
+          .in('id', classIds)
+        const nameById = Object.fromEntries(
+          ((classRows ?? []) as { id: string; name: string }[]).map((c) => [c.id, c.name]),
+        )
+        for (const m of memberships) {
+          const nm = nameById[m.class_id]
+          if (nm) (classMap[m.child_id] ??= []).push(nm)
+        }
       }
     }
 
