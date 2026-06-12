@@ -1,7 +1,7 @@
 'use client'
 import { forwardRef, type HTMLAttributes } from 'react'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { cn } from '../../lib/cn'
 import { getBrowserClient } from '../../lib/supabase'
 
@@ -62,13 +62,15 @@ interface SidebarProps extends HTMLAttributes<HTMLElement> {
 export const Sidebar = forwardRef<HTMLElement, SidebarProps>(
   ({ className, role, userName, ...props }, ref) => {
     const pathname = usePathname()
-    const router   = useRouter()
     const items    = NAV_MAP[role] ?? PARENT_NAV
 
     async function handleLogout() {
       const sb = getBrowserClient()
-      await sb.auth.signOut()
-      router.replace('/login')
+      // scope 'local': xóa phiên + cookie ở client ngay, không gọi endpoint logout server
+      // (tránh lỗi 400 + chậm). Full reload thay vì router.replace để request mới tới /login
+      // mang cookie đã xóa → middleware không còn thấy user → hết nhấp nháy redirect.
+      await sb.auth.signOut({ scope: 'local' })
+      window.location.assign('/login')
     }
 
     return (
