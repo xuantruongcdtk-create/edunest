@@ -62,6 +62,22 @@ const STATUS_CONFIG = {
 }
 const OPTS = ['A', 'B', 'C', 'D']
 
+// ISO (yyyy-mm-dd...) → dd/mm/yyyy để hiển thị/nhập
+function toDisplayDate(iso: string | null): string {
+  if (!iso) return ''
+  const p = iso.slice(0, 10).split('-')
+  return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : ''
+}
+// dd/mm/yyyy → ISO yyyy-mm-dd; trả null nếu không hợp lệ
+function toISODate(s: string): string | null {
+  const m = s.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
+  if (!m) return null
+  const [, dd, mm, yyyy] = m
+  const d = Number(dd), mo = Number(mm)
+  if (d < 1 || d > 31 || mo < 1 || mo > 12) return null
+  return `${yyyy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`
+}
+
 export default function QuizDetailPage({ params }: { params: { id: string } }) {
   const { id } = params
   const router  = useRouter()
@@ -411,7 +427,7 @@ export default function QuizDetailPage({ params }: { params: { id: string } }) {
                             <button
                               onClick={() => {
                                 setPendingClassId(cls.id)
-                                setPendingDueDate(assignment.due_date ? assignment.due_date.slice(0, 10) : '')
+                                setPendingDueDate(toDisplayDate(assignment.due_date))
                               }}
                               className="text-xs text-gray-600 border border-gray-200 px-2.5 py-1.5 rounded-input hover:border-primary/40 hover:text-primary transition-colors">
                               Sửa hạn
@@ -439,15 +455,25 @@ export default function QuizDetailPage({ params }: { params: { id: string } }) {
                         <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-input px-3 py-1.5">
                           <span className="text-xs text-gray-400">Hạn nộp:</span>
                           <input
-                            type="date"
+                            type="text"
+                            inputMode="numeric"
+                            placeholder="dd/mm/yyyy"
+                            maxLength={10}
                             value={pendingDueDate}
                             onChange={(e) => setPendingDueDate(e.target.value)}
-                            className="text-sm text-gray-800 bg-transparent outline-none"
+                            className="text-sm text-gray-800 bg-transparent outline-none w-28 placeholder-gray-400"
                           />
                         </div>
-                        <span className="text-xs text-gray-400">(tuỳ chọn)</span>
+                        <span className="text-xs text-gray-400">(tuỳ chọn, dd/mm/yyyy)</span>
                         <button
-                          onClick={() => assignToClass(cls.id, pendingDueDate || null)}
+                          onClick={() => {
+                            const iso = pendingDueDate.trim() ? toISODate(pendingDueDate) : null
+                            if (pendingDueDate.trim() && !iso) {
+                              setAssignErr('Hạn nộp không hợp lệ. Nhập theo dd/mm/yyyy.')
+                              return
+                            }
+                            assignToClass(cls.id, iso)
+                          }}
                           disabled={updating}
                           className="text-xs bg-primary text-white font-semibold px-3 py-1.5 rounded-input hover:bg-primary-dark transition-colors disabled:opacity-60 flex items-center gap-1">
                           {updating
