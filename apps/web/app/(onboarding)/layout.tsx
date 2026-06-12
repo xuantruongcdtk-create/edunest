@@ -43,7 +43,9 @@ export default function OnboardingLayout({ children }: { children: ReactNode }) 
       setRole(r)
     }
     loadRole()
-  }, [])
+    // Đọc lại role mỗi khi đổi bước — để thanh tiến trình cập nhật sau khi
+    // người dùng chọn vai trò ở bước 1 (vd đăng nhập Google mặc định 'parent').
+  }, [pathname])
 
   const STEPS   = STEPS_BY_ROLE[role] ?? STEPS_BY_ROLE.parent
   const current = STEPS.findIndex((s) => pathname.startsWith(s.path)) + 1

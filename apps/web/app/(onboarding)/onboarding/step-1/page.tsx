@@ -99,6 +99,34 @@ export default function OnboardingStep1() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Chọn vai trò — phân loại tài khoản (quan trọng cho đăng nhập Google) */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Bạn là <span className="text-danger">*</span>
+          </label>
+          <div className="grid grid-cols-3 gap-2">
+            {([
+              { value: 'parent',  label: 'Phụ huynh',     icon: '👨‍👩‍👧' },
+              { value: 'teacher', label: 'Giáo viên',     icon: '👩‍🏫' },
+              { value: 'bgh',     label: 'Ban giám hiệu', icon: '🏫' },
+            ] as { value: string; label: string; icon: string }[]).map(({ value, label, icon }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setRole(value)}
+                className={`flex flex-col items-center justify-center gap-1 py-2.5 px-1 rounded-input border text-xs font-medium text-center transition-colors ${
+                  role === value
+                    ? 'border-primary bg-primary/8 text-primary'
+                    : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                }`}
+              >
+                <span className="text-base">{icon}</span>
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1.5">
             Họ và tên <span className="text-danger">*</span>
