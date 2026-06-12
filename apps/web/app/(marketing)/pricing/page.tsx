@@ -1,9 +1,4 @@
-'use client'
-
-import { useState } from 'react'
-import Link         from 'next/link'
-
-type Billing = 'monthly' | 'yearly'
+import Link from 'next/link'
 
 const FEATURES_FREE = [
   '3 bộ quiz mỗi tháng',
@@ -11,29 +6,18 @@ const FEATURES_FREE = [
   '10 tin nhắn AI Coach / tháng',
   '1 hồ sơ con',
 ]
-const FEATURES_PREMIUM = [
-  'Không giới hạn quiz bằng AI',
-  'AI Coach 24/7 (200 tin/tháng)',
-  'Cảnh báo sớm — Early Warning',
-  'Báo cáo tuần & phân tích sâu',
+const FEATURES_BASIC = [
+  'Quiz bằng AI không giới hạn',
+  'Phân tích điểm số & biểu đồ đầy đủ',
+  'Cảnh báo học tập sớm',
+  'Lên tới 3 hồ sơ con',
+]
+const FEATURES_PRO = [
+  'Mọi tính năng gói Cơ bản',
+  'AI Coach 24/7 không giới hạn',
   'Learning DNA™ của con',
+  'Báo cáo tuần & xuất PDF',
   'Lên tới 5 hồ sơ con',
-  'Xuất PDF báo cáo',
-]
-const FEATURES_TEACHER = [
-  'Tất cả tính năng Premium',
-  'Portal quản lý lớp học',
-  'Tạo quiz AI cho học sinh',
-  'Thống kê lớp — điểm TB, xu hướng',
-  'Cảnh báo học sinh có nguy cơ',
-  'Chia sẻ quiz (link công khai)',
-  'Hỗ trợ ưu tiên qua Zalo',
-]
-
-const CREDIT_PACKS = [
-  { label: 'Gói nhỏ',   count: 10,  price: 50_000,  saving: null },
-  { label: 'Gói vừa',   count: 30,  price: 120_000, saving: '-17%' },
-  { label: 'Gói lớn',   count: 100, price: 350_000, saving: '-30%' },
 ]
 
 function fmt(n: number) {
@@ -41,15 +25,15 @@ function fmt(n: number) {
 }
 
 interface PlanCardProps {
-  badge?:    string
+  badge?:     string
   badgeColor?: string
-  name:      string
-  tagline:   string
-  price:     React.ReactNode
+  name:       string
+  tagline:    string
+  price:      React.ReactNode
   priceNote?: string
-  features:  string[]
-  cta:       string
-  ctaHref:   string
+  features:   string[]
+  cta:        string
+  ctaHref:    string
   highlight?: boolean
 }
 
@@ -65,7 +49,7 @@ function PlanCard({ badge, badgeColor, name, tagline, price, priceNote, features
       )}
 
       <div className={`px-6 pt-6 pb-5 ${highlight ? 'bg-primary text-white' : 'bg-white'}`}>
-        <p className={`text-xs font-semibold uppercase tracking-widest mb-1 ${highlight ? 'text-primary-light/70' : 'text-gray-400'}`}>{tagline}</p>
+        <p className={`text-xs font-semibold uppercase tracking-widest mb-1 ${highlight ? 'text-white/70' : 'text-gray-400'}`}>{tagline}</p>
         <h3 className={`font-display font-extrabold text-xl mb-3 ${highlight ? 'text-white' : 'text-gray-900'}`}>{name}</h3>
         <div className={`font-display font-extrabold text-3xl ${highlight ? 'text-white' : 'text-gray-900'}`}>{price}</div>
         {priceNote && <p className={`text-xs mt-1 ${highlight ? 'text-white/70' : 'text-gray-400'}`}>{priceNote}</p>}
@@ -95,12 +79,6 @@ function PlanCard({ badge, badgeColor, name, tagline, price, priceNote, features
 }
 
 export default function PricingPage() {
-  const [billing, setBilling] = useState<Billing>('monthly')
-  const yearlyDiscount = 0.2 // 20% off
-
-  const premiumPrice = billing === 'monthly' ? 199_000 : Math.round(199_000 * 12 * (1 - yearlyDiscount) / 12)
-  const teacherPrice = billing === 'monthly' ? 299_000 : Math.round(299_000 * 12 * (1 - yearlyDiscount) / 12)
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -127,23 +105,6 @@ export default function PricingPage() {
           <p className="text-gray-500 text-lg max-w-xl mx-auto">
             Bắt đầu miễn phí. Nâng cấp khi bạn cần thêm insight và AI coaching.
           </p>
-
-          {/* Billing toggle */}
-          <div className="inline-flex items-center bg-gray-100 rounded-btn p-1 gap-1">
-            <button onClick={() => setBilling('monthly')}
-              className={`px-4 py-1.5 rounded-btn text-sm font-medium transition-colors ${
-                billing === 'monthly' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
-              }`}>
-              Hằng tháng
-            </button>
-            <button onClick={() => setBilling('yearly')}
-              className={`px-4 py-1.5 rounded-btn text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                billing === 'yearly' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
-              }`}>
-              Hằng năm
-              <span className="bg-success text-white text-xs px-1.5 py-0.5 rounded-full font-bold">-20%</span>
-            </button>
-          </div>
         </div>
 
         {/* Main plans */}
@@ -160,82 +121,42 @@ export default function PricingPage() {
           <PlanCard
             badge="Phổ biến nhất"
             badgeColor="bg-white text-primary border border-primary/30"
-            name="Premium"
+            name="Cơ bản"
             tagline="Dành cho phụ huynh"
-            price={
-              <span>
-                {fmt(premiumPrice)}
-                <span className="text-base font-semibold opacity-70"> / tháng</span>
-              </span>
-            }
-            priceNote={billing === 'yearly' ? `Thanh toán ${fmt(premiumPrice * 12)}/năm — tiết kiệm ${fmt(199_000 * 12 * yearlyDiscount)}` : 'Huỷ bất cứ lúc nào'}
-            features={FEATURES_PREMIUM}
+            price={<span>{fmt(99_000)}<span className="text-base font-semibold opacity-70"> / tháng</span></span>}
+            priceNote="Huỷ bất cứ lúc nào"
+            features={FEATURES_BASIC}
             cta="Dùng thử 7 ngày miễn phí"
-            ctaHref="/register?plan=premium"
+            ctaHref="/register?plan=basic"
             highlight
           />
           <PlanCard
-            name="Teacher Pro"
-            tagline="Dành cho giáo viên"
-            price={
-              <span>
-                {fmt(teacherPrice)}
-                <span className="text-base font-semibold text-gray-400"> / tháng</span>
-              </span>
-            }
-            priceNote={billing === 'yearly' ? `Thanh toán ${fmt(teacherPrice * 12)}/năm` : 'Huỷ bất cứ lúc nào'}
-            features={FEATURES_TEACHER}
-            cta="Đăng ký Teacher Pro"
-            ctaHref="/register?plan=teacher"
+            name="Nâng cao"
+            tagline="Cho phụ huynh & giáo viên"
+            price={<span>{fmt(199_000)}<span className="text-base font-semibold text-gray-400"> / tháng</span></span>}
+            priceNote="Đầy đủ AI Coach & Learning DNA"
+            features={FEATURES_PRO}
+            cta="Đăng ký gói Nâng cao"
+            ctaHref="/register?plan=pro"
           />
-        </div>
-
-        {/* Credit packs */}
-        <div>
-          <div className="text-center mb-8">
-            <h2 className="font-display font-extrabold text-2xl text-gray-900 mb-2">Gói quiz lẻ</h2>
-            <p className="text-gray-500 text-sm">Không muốn đăng ký? Mua theo số lượng, không hết hạn.</p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {CREDIT_PACKS.map((pack) => (
-              <div key={pack.label} className="bg-white rounded-card shadow-card p-5 flex items-center justify-between ring-1 ring-gray-100 hover:ring-primary/40 transition-all hover:shadow-card-hover">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <p className="font-display font-bold text-gray-900">{pack.label}</p>
-                    {pack.saving && (
-                      <span className="text-xs bg-success/10 text-success font-bold px-1.5 py-0.5 rounded-full">{pack.saving}</span>
-                    )}
-                  </div>
-                  <p className="text-sm text-gray-500">{pack.count} bộ quiz AI</p>
-                </div>
-                <div className="text-right">
-                  <p className="font-display font-extrabold text-gray-900">{fmt(pack.price)}</p>
-                  <p className="text-xs text-gray-400">{fmt(Math.round(pack.price / pack.count))} / bộ</p>
-                </div>
-              </div>
-            ))}
-          </div>
-          <p className="text-center text-sm text-gray-400 mt-4">
-            Mua credit sau khi đăng nhập tại Dashboard → Tài khoản
-          </p>
         </div>
 
         {/* B2B teaser */}
         <div className="bg-gradient-to-br from-[#185FA5] to-[#0e4a85] rounded-card p-8 text-white flex flex-col md:flex-row items-center justify-between gap-6">
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-white/60 mb-2">Dành cho trường học</p>
-            <h3 className="font-display font-extrabold text-2xl mb-2">Gói B2B trường học</h3>
+            <h3 className="font-display font-extrabold text-2xl mb-2">Gói Trường học</h3>
             <p className="text-white/80 text-sm max-w-md">
-              Dashboard cho Ban giám hiệu, báo cáo toàn trường, tích hợp lớp học, hỗ trợ triển khai.
-              Từ <strong className="text-white">5M/năm</strong> cho 300 học sinh.
+              Dashboard cho Ban giám hiệu, báo cáo toàn trường, quản lý lớp & giáo viên, hỗ trợ triển khai.
+              Chỉ <strong className="text-white">990.000đ / năm</strong>.
             </p>
           </div>
           <div className="flex-shrink-0 flex flex-col gap-3 text-center">
-            <a href="mailto:contact@edunest.vn"
+            <Link href="/register?plan=school"
               className="bg-white text-[#185FA5] text-sm font-bold px-6 py-2.5 rounded-btn hover:bg-gray-50 transition-colors whitespace-nowrap">
-              Liên hệ tư vấn →
-            </a>
-            <p className="text-xs text-white/50">Phản hồi trong 24 giờ</p>
+              Đăng ký cho trường →
+            </Link>
+            <a href="mailto:contact@edunest.vn" className="text-xs text-white/60 hover:text-white">Hoặc liên hệ tư vấn</a>
           </div>
         </div>
 
@@ -246,15 +167,15 @@ export default function PricingPage() {
             {[
               {
                 q: 'Có thể huỷ bất cứ lúc nào không?',
-                a: 'Có. Không có phí huỷ, không ràng buộc. Huỷ từ Settings → Tài khoản, có hiệu lực từ chu kỳ tiếp theo.',
+                a: 'Có. Không có phí huỷ, không ràng buộc. Gói có hiệu lực đến hết hạn đã thanh toán.',
               },
               {
                 q: 'Thanh toán qua phương thức nào?',
                 a: 'MoMo, VNPAY và thẻ nội địa ATM. Phương thức quốc tế (Visa/Mastercard) sẽ có sớm.',
               },
               {
-                q: '7 ngày dùng thử là như thế nào?',
-                a: 'Bạn có toàn quyền dùng Premium trong 7 ngày, không bị tính tiền. Nhắc trước 24 giờ trước khi hết trial.',
+                q: 'Gói Cơ bản và Nâng cao khác nhau thế nào?',
+                a: 'Cơ bản (99k/tháng) mở khoá quiz không giới hạn + phân tích + cảnh báo sớm. Nâng cao (199k/tháng) có thêm AI Coach không giới hạn, Learning DNA và báo cáo tuần.',
               },
               {
                 q: 'Dữ liệu của con có được bảo mật không?',
