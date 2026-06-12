@@ -88,6 +88,11 @@ function toDisplayDate(iso: string | null): string {
   const p = iso.slice(0, 10).split('-')
   return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : ''
 }
+// Ngày hôm nay theo local, dạng ISO yyyy-mm-dd
+function todayISO(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
 // dd/mm/yyyy → ISO yyyy-mm-dd; trả null nếu không hợp lệ
 function toISODate(s: string): string | null {
   const m = s.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
@@ -503,6 +508,7 @@ export default function QuizDetailPage({ params }: { params: { id: string } }) {
                           {/* Lịch để chọn nhanh — đồng bộ với ô dd/mm/yyyy */}
                           <input
                             type="date"
+                            min={todayISO()}
                             value={toISODate(pendingDueDate) ?? ''}
                             onChange={(e) => setPendingDueDate(e.target.value ? toDisplayDate(e.target.value) : '')}
                             aria-label="Chọn ngày từ lịch"
@@ -515,6 +521,10 @@ export default function QuizDetailPage({ params }: { params: { id: string } }) {
                             const iso = pendingDueDate.trim() ? toISODate(pendingDueDate) : null
                             if (pendingDueDate.trim() && !iso) {
                               setAssignErr('Hạn nộp không hợp lệ. Nhập theo dd/mm/yyyy.')
+                              return
+                            }
+                            if (iso && iso < todayISO()) {
+                              setAssignErr('Hạn nộp không được trước ngày hôm nay.')
                               return
                             }
                             assignToClass(cls.id, iso)
