@@ -189,7 +189,7 @@ export default function QuizDetailPage({ params }: { params: { id: string } }) {
       })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
-        setAssignErr((err as { error?: string }).error ?? 'Giao bài thất bại')
+        setAssignErr((err as { error?: { message?: string } }).error?.message ?? 'Giao bài thất bại')
         return
       }
       await loadAssignments()

@@ -133,7 +133,7 @@ export default function BghClassesPage() {
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}))
-      setError((err as { error?: string }).error ?? 'Không thể thêm lớp. Thử lại nhé.')
+      setError((err as { error?: { message?: string } }).error?.message ?? 'Không thể thêm lớp. Thử lại nhé.')
       return
     }
 

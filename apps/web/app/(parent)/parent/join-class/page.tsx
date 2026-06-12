@@ -62,7 +62,7 @@ export default function ParentJoinClassPage() {
     setLoading(false)
 
     if (!res.ok) {
-      setError((json as { error?: string }).error ?? 'Tham gia lớp thất bại')
+      setError((json as { error?: { message?: string } }).error?.message ?? 'Tham gia lớp thất bại')
       return
     }
 

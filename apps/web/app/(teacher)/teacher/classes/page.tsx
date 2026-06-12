@@ -53,7 +53,7 @@ export default function TeacherClassesPage() {
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}))
-      setCreateErr((err as { error?: string }).error ?? 'Tạo lớp thất bại')
+      setCreateErr((err as { error?: { message?: string } }).error?.message ?? 'Tạo lớp thất bại')
       setCreating(false)
       return
     }
