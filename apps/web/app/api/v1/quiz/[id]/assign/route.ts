@@ -7,6 +7,16 @@ const AssignSchema = z.object({
   dueDate: z.string().nullable().optional(),
 })
 
+// Chuẩn hoá hạn nộp về ISO (yyyy-mm-dd). Nhận cả ISO lẫn dd/mm/yyyy. Sai → null.
+function normalizeDueDate(s: string | null | undefined): string | null {
+  if (!s || !s.trim()) return null
+  const t = s.trim()
+  if (/^\d{4}-\d{2}-\d{2}/.test(t)) return t.slice(0, 10)          // đã là ISO
+  const m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)             // dd/mm/yyyy
+  if (m) return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`
+  return null
+}
+
 export function GET(req: Request, { params }: { params: { id: string } }) {
   return withHandler(async (_req) => {
     const { id } = params
@@ -55,7 +65,7 @@ export function POST(req: Request, { params }: { params: { id: string } }) {
           quiz_id:     id,
           class_id:    parsed.data.classId,
           assigned_by: user.id,
-          due_date:    parsed.data.dueDate ?? null,
+          due_date:    normalizeDueDate(parsed.data.dueDate),
         },
         { onConflict: 'quiz_id,class_id' },
       )

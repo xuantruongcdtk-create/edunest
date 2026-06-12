@@ -452,7 +452,7 @@ export default function QuizDetailPage({ params }: { params: { id: string } }) {
                     {/* Inline date picker when pending */}
                     {isPending && (
                       <div className="px-5 pb-3.5 ml-11 flex items-center gap-2 flex-wrap">
-                        <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-input px-3 py-1.5">
+                        <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-input px-3 py-1.5">
                           <span className="text-xs text-gray-400">Hạn nộp:</span>
                           <input
                             type="text"
@@ -461,7 +461,15 @@ export default function QuizDetailPage({ params }: { params: { id: string } }) {
                             maxLength={10}
                             value={pendingDueDate}
                             onChange={(e) => setPendingDueDate(e.target.value)}
-                            className="text-sm text-gray-800 bg-transparent outline-none w-28 placeholder-gray-400"
+                            className="text-sm text-gray-800 bg-transparent outline-none w-24 placeholder-gray-400"
+                          />
+                          {/* Lịch để chọn nhanh — đồng bộ với ô dd/mm/yyyy */}
+                          <input
+                            type="date"
+                            value={toISODate(pendingDueDate) ?? ''}
+                            onChange={(e) => setPendingDueDate(e.target.value ? toDisplayDate(e.target.value) : '')}
+                            aria-label="Chọn ngày từ lịch"
+                            className="w-5 text-transparent bg-transparent outline-none cursor-pointer"
                           />
                         </div>
                         <span className="text-xs text-gray-400">(tuỳ chọn, dd/mm/yyyy)</span>
