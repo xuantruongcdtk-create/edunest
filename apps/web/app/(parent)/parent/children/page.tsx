@@ -13,6 +13,7 @@ interface Child {
   created_at:    string
   avg_score:     number | null
   score_count:   number
+  class_names:   string[]
 }
 
 function toDisplayDate(iso: string | null): string {
@@ -68,7 +69,22 @@ export default function ChildrenPage() {
       .eq('parent_id', user.id)
       .order('created_at')
 
-    const list = (kids ?? []) as Omit<Child, 'avg_score' | 'score_count'>[]
+    const list = (kids ?? []) as Omit<Child, 'avg_score' | 'score_count' | 'class_names'>[]
+
+    // Lấy lớp mỗi con đang tham gia (class_memberships → classes.name)
+    const childIds = list.map((c) => c.id)
+    const classMap: Record<string, string[]> = {}
+    if (childIds.length > 0) {
+      const { data: cmRows } = await (sb as any)
+        .from('class_memberships')
+        .select('child_id, classes!class_id(name)')
+        .in('child_id', childIds)
+      for (const r of (cmRows ?? []) as { child_id: string; classes: { name: string } | null }[]) {
+        const nm = r.classes?.name
+        if (!nm) continue
+        ;(classMap[r.child_id] ??= []).push(nm)
+      }
+    }
 
     // Fetch score stats per child
     const enriched = await Promise.all(list.map(async (child) => {
@@ -82,7 +98,12 @@ export default function ChildrenPage() {
         ? recs.map((r) => (r.score / r.max_score) * 10).reduce((s, a) => s + a, 0) / recs.length
         : null
 
-      return { ...child, avg_score: avg != null ? Math.round(avg * 10) / 10 : null, score_count: recs.length }
+      return {
+        ...child,
+        avg_score:   avg != null ? Math.round(avg * 10) / 10 : null,
+        score_count: recs.length,
+        class_names: classMap[child.id] ?? [],
+      }
     }))
 
     setChildren(enriched)
@@ -225,6 +246,15 @@ export default function ChildrenPage() {
                       <div>
                         <h3 className="font-display font-bold text-gray-900">{child.full_name}</h3>
                         <p className="text-xs text-gray-500 mt-0.5">{getGradeLabel(child.grade)}</p>
+                        {child.class_names.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {child.class_names.map((nm) => (
+                              <span key={nm} className="text-xs font-medium text-primary bg-primary/8 px-2 py-0.5 rounded-full">
+                                🏫 {nm}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                         {child.school_name && (
                           <p className="text-xs text-gray-400 mt-0.5 truncate max-w-[140px]">{child.school_name}</p>
                         )}
