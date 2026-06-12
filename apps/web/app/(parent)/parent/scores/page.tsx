@@ -366,9 +366,20 @@ function ScoresPageInner() {
 
         {/* Kết quả bài kiểm tra (quiz) */}
         <div className="bg-white rounded-card shadow-card overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-100">
-            <h2 className="font-display font-semibold text-gray-900">Bài kiểm tra đã làm</h2>
-            <p className="text-xs text-gray-400 mt-0.5">Kết quả các bài kiểm tra giáo viên giao</p>
+          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between gap-3">
+            <div>
+              <h2 className="font-display font-semibold text-gray-900">Bài kiểm tra đã làm</h2>
+              <p className="text-xs text-gray-400 mt-0.5">Riêng với điểm nhập tay ở trên</p>
+            </div>
+            {quizResults.length > 0 && (
+              <div className="text-right flex-shrink-0">
+                <p className="text-xs text-gray-400">Điểm TB bài KT</p>
+                <p className="font-display font-extrabold text-xl text-accent">
+                  {(quizResults.reduce((a, q) => a + (q.score / q.max_score) * 10, 0) / quizResults.length).toFixed(1)}
+                  <span className="text-xs text-gray-400 font-normal">/10</span>
+                </p>
+              </div>
+            )}
           </div>
           {loading ? (
             <div className="p-6 space-y-3">

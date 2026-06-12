@@ -45,6 +45,14 @@ interface Assignment {
   class:    ClassItem
 }
 
+interface AttemptDetail {
+  type:      'mcq' | 'essay'
+  score:     number
+  max:       number
+  correct?:  boolean
+  feedback?: string
+}
+
 interface Submission {
   id:                 string
   student_id:         string
@@ -53,6 +61,8 @@ interface Submission {
   max_score:          number
   time_taken_seconds: number
   completed_at:       string
+  answers:            (number | string)[]
+  details:            AttemptDetail[]
 }
 
 const SUBJ_LABEL: Record<string, string> = {
@@ -108,6 +118,7 @@ export default function QuizDetailPage({ params }: { params: { id: string } }) {
   const [assignMsg,      setAssignMsg]      = useState<string | null>(null)
   const [assignErr,      setAssignErr]      = useState<string | null>(null)
   const [submissions,    setSubmissions]    = useState<Submission[]>([])
+  const [expandedSub,    setExpandedSub]    = useState<string | null>(null)
 
   useEffect(() => {
     async function load() {
@@ -168,7 +179,7 @@ export default function QuizDetailPage({ params }: { params: { id: string } }) {
       // Bài học sinh đã nộp (quiz_attempts) + tên học sinh
       const { data: attData } = await (sb as any)
         .from('quiz_attempts')
-        .select('id, student_id, score, max_score, time_taken_seconds, completed_at')
+        .select('id, student_id, score, max_score, time_taken_seconds, completed_at, answers, details')
         .eq('quiz_id', id)
         .order('completed_at', { ascending: false })
       const atts = (attData ?? []) as Omit<Submission, 'student_name'>[]
@@ -550,21 +561,89 @@ export default function QuizDetailPage({ params }: { params: { id: string } }) {
                 const color = pct >= 80 ? 'text-success' : pct >= 50 ? 'text-warning' : 'text-danger'
                 const mins = Math.floor(s.time_taken_seconds / 60)
                 const secs = s.time_taken_seconds % 60
+                const open = expandedSub === s.id
                 return (
-                  <div key={s.id} className="px-5 py-3.5 flex items-center gap-4">
-                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      <span className="text-primary text-sm font-bold">{s.student_name.charAt(0).toUpperCase()}</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">{s.student_name}</p>
-                      <p className="text-xs text-gray-400">
-                        {new Date(s.completed_at).toLocaleDateString('vi-VN')} · {mins}:{secs.toString().padStart(2, '0')}
-                      </p>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className={`font-display font-bold text-lg ${color}`}>{pct}%</p>
-                      <p className="text-xs text-gray-400">{s.score}/{s.max_score} điểm</p>
-                    </div>
+                  <div key={s.id}>
+                    <button
+                      onClick={() => setExpandedSub(open ? null : s.id)}
+                      className="w-full px-5 py-3.5 flex items-center gap-4 text-left hover:bg-gray-50 transition-colors">
+                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <span className="text-primary text-sm font-bold">{s.student_name.charAt(0).toUpperCase()}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{s.student_name}</p>
+                        <p className="text-xs text-gray-400">
+                          {new Date(s.completed_at).toLocaleDateString('vi-VN')} · {mins}:{secs.toString().padStart(2, '0')}
+                        </p>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className={`font-display font-bold text-lg ${color}`}>{pct}%</p>
+                        <p className="text-xs text-gray-400">{s.score}/{s.max_score} điểm</p>
+                      </div>
+                      <span className="text-gray-300 flex-shrink-0">{open ? '▲' : '▼'}</span>
+                    </button>
+
+                    {/* Chi tiết bài làm của học sinh */}
+                    {open && (
+                      <div className="px-5 pb-4 space-y-3 bg-gray-50/50">
+                        {quiz.questions.map((q, idx) => {
+                          const ans = s.answers?.[idx]
+                          const det = s.details?.[idx]
+                          if (q.question_type === 'essay') {
+                            return (
+                              <div key={q.id} className="pt-3">
+                                <p className="text-sm font-medium text-gray-900 mb-1.5">
+                                  <span className="text-accent">✍️ Câu {idx + 1}:</span> {q.question_text}
+                                  {det?.score != null && <span className="ml-2 text-xs font-semibold text-accent">({det.score}/{det.max ?? 10}đ)</span>}
+                                </p>
+                                <div className="ml-4 space-y-1.5 text-xs">
+                                  <div className="px-3 py-2 bg-white border border-gray-100 rounded-input text-gray-700">
+                                    <span className="font-semibold text-gray-500">Trả lời: </span>
+                                    {typeof ans === 'string' && ans.trim() ? ans : <em className="text-gray-400">(không trả lời)</em>}
+                                  </div>
+                                  {det?.feedback && (
+                                    <div className="px-3 py-2 bg-accent/5 border border-accent/15 rounded-input text-gray-700">
+                                      <span className="font-semibold text-accent">Nhận xét AI: </span>{det.feedback}
+                                    </div>
+                                  )}
+                                  {q.sample_answer && (
+                                    <div className="px-3 py-2 bg-success/5 border border-success/15 rounded-input text-gray-700">
+                                      <span className="font-semibold text-success">Đáp án mẫu: </span>{q.sample_answer}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )
+                          }
+                          const isRight = det?.correct ?? (ans === q.correct_index)
+                          return (
+                            <div key={q.id} className="pt-3">
+                              <p className="text-sm font-medium text-gray-900 mb-1.5">
+                                <span className={isRight ? 'text-success' : 'text-danger'}>{isRight ? '✓' : '✗'} Câu {idx + 1}:</span> {q.question_text}
+                              </p>
+                              <div className="ml-4 space-y-1 text-xs">
+                                {q.options.map((opt, i) => {
+                                  const isCorrect = i === q.correct_index
+                                  const isUser    = i === ans
+                                  return (
+                                    <div key={i} className={`flex items-center gap-2 px-3 py-1.5 rounded-input ${
+                                      isCorrect          ? 'bg-success/8 border border-success/20 text-success font-medium' :
+                                      isUser && !isRight ? 'bg-danger/8 border border-danger/20 text-danger' :
+                                      'text-gray-500'
+                                    }`}>
+                                      <span className="font-bold w-4">{OPTS[i]}.</span>
+                                      <span className="flex-1">{opt}</span>
+                                      {isCorrect && <span className="font-semibold">✓ Đúng</span>}
+                                      {isUser && !isRight && <span>Đã chọn</span>}
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
                   </div>
                 )
               })}

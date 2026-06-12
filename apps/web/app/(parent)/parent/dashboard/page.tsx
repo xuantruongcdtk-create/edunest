@@ -81,6 +81,16 @@ export default async function ParentDashboard({ searchParams }: PageProps) {
     ? scores.map((r) => r.average).reduce((s, a) => s + a, 0) / scores.length
     : 0
 
+  // Điểm TB bài kiểm tra (quiz_attempts) — riêng với điểm môn học nhập tay
+  const { data: quizAtts } = await db
+    .from('quiz_attempts')
+    .select('score, max_score')
+    .eq('student_id', activeChild.id)
+  const qAtts   = (quizAtts ?? []) as { score: number; max_score: number }[]
+  const quizAvg = qAtts.length
+    ? qAtts.reduce((s, a) => s + (a.score / a.max_score) * 10, 0) / qAtts.length
+    : 0
+
   const lastMsg = (() => {
     const msgs = (coachRes as { data: { messages: Array<{ role: string; content: string }> } | null }).data?.messages
     if (!Array.isArray(msgs) || msgs.length === 0) return undefined
@@ -95,10 +105,10 @@ export default async function ParentDashboard({ searchParams }: PageProps) {
       />
       <div className="p-6 space-y-6 flex-1">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard label="Điểm trung bình"   value={avgScore.toFixed(1)} unit="/10" icon="⭐" accent="primary" />
+          <StatCard label="Điểm TB (nhập tay)" value={avgScore.toFixed(1)} unit="/10" icon="⭐" accent="primary" />
+          <StatCard label="Điểm TB bài KT"     value={qAtts.length ? quizAvg.toFixed(1) : '—'} unit={qAtts.length ? '/10' : ''} icon="📝" accent="accent" />
           <StatCard label="Số môn theo dõi"   value={scores.length}                  icon="📚" accent="success" />
           <StatCard label="Cảnh báo chưa đọc" value={alerts.filter((a) => !a.is_read).length} icon="🔔" accent="warning" />
-          <StatCard label="Lớp"               value={`${activeChild.grade}`}          icon="🎓" accent="accent" />
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">

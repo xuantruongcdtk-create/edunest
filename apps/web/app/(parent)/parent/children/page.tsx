@@ -14,6 +14,7 @@ interface Child {
   avg_score:     number | null
   score_count:   number
   class_names:   string[]
+  quiz_avg:      number | null
 }
 
 function toDisplayDate(iso: string | null): string {
@@ -69,7 +70,7 @@ export default function ChildrenPage() {
       .eq('parent_id', user.id)
       .order('created_at')
 
-    const list = (kids ?? []) as Omit<Child, 'avg_score' | 'score_count' | 'class_names'>[]
+    const list = (kids ?? []) as Omit<Child, 'avg_score' | 'score_count' | 'class_names' | 'quiz_avg'>[]
 
     // Lấy lớp mỗi con đang tham gia — tách 2 query để tránh lỗi embed lồng
     const childIds = list.map((c) => c.id)
@@ -98,6 +99,25 @@ export default function ChildrenPage() {
       }
     }
 
+    // Điểm TB bài kiểm tra (quiz_attempts) theo từng con — riêng với điểm nhập tay
+    const quizAvgByChild: Record<string, number | null> = {}
+    if (childIds.length > 0) {
+      const { data: atts } = await sb
+        .from('quiz_attempts')
+        .select('student_id, score, max_score')
+        .in('student_id', childIds)
+      const acc: Record<string, { sum: number; n: number }> = {}
+      for (const a of (atts ?? []) as { student_id: string; score: number; max_score: number }[]) {
+        if (!acc[a.student_id]) acc[a.student_id] = { sum: 0, n: 0 }
+        acc[a.student_id]!.sum += (a.score / a.max_score) * 10
+        acc[a.student_id]!.n  += 1
+      }
+      for (const cid of childIds) {
+        const e = acc[cid]
+        quizAvgByChild[cid] = e ? Math.round((e.sum / e.n) * 10) / 10 : null
+      }
+    }
+
     // Fetch score stats per child
     const enriched = await Promise.all(list.map(async (child) => {
       const { data: scores } = await sb
@@ -115,6 +135,7 @@ export default function ChildrenPage() {
         avg_score:   avg != null ? Math.round(avg * 10) / 10 : null,
         score_count: recs.length,
         class_names: classMap[child.id] ?? [],
+        quiz_avg:    quizAvgByChild[child.id] ?? null,
       }
     }))
 
@@ -296,11 +317,17 @@ export default function ChildrenPage() {
                 </div>
 
                 {/* Stats */}
-                <div className="px-5 py-4 grid grid-cols-2 gap-4">
+                <div className="px-5 py-4 grid grid-cols-3 gap-3">
                   <div>
                     <p className="text-xs text-gray-400 mb-0.5">Điểm TB</p>
                     <p className={`font-display font-extrabold text-2xl ${getScoreColor(child.avg_score)}`}>
                       {child.avg_score != null ? child.avg_score : '—'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-400 mb-0.5">TB bài KT</p>
+                    <p className={`font-display font-extrabold text-2xl ${getScoreColor(child.quiz_avg)}`}>
+                      {child.quiz_avg != null ? child.quiz_avg : '—'}
                     </p>
                   </div>
                   <div>
