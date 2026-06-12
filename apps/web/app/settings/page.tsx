@@ -139,14 +139,12 @@ export default function SettingsPage() {
             ? 'Bạn đang dùng gói Miễn phí. Nâng cấp để mở khoá thêm tính năng AI Coach và báo cáo nâng cao.'
             : 'Bạn đang dùng gói trả phí. Cảm ơn bạn đã ủng hộ EduNest!'}
         </p>
-        {profile?.plan_tier === 'free' && (
-          <a
-            href="/pricing"
-            className="inline-block bg-primary text-white text-sm font-semibold px-5 py-2 rounded-btn hover:bg-primary-dark transition-colors"
-          >
-            Xem các gói nâng cấp →
-          </a>
-        )}
+        <a
+          href="/settings/billing"
+          className="inline-block bg-primary text-white text-sm font-semibold px-5 py-2 rounded-btn hover:bg-primary-dark transition-colors"
+        >
+          {profile?.plan_tier === 'free' ? 'Xem các gói nâng cấp →' : 'Quản lý gói & thanh toán →'}
+        </a>
       </div>
 
       {/* Account section */}
