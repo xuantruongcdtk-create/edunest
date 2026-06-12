@@ -6,33 +6,45 @@ const PUBLIC_PATHS = ['/', '/login', '/register', '/pricing', '/auth/callback', 
 const AUTH_PATHS   = ['/login', '/register']
 
 export async function middleware(request: NextRequest) {
-  const response = NextResponse.next({ request })
+  let response = NextResponse.next({ request })
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll:  () => request.cookies.getAll(),
-        setAll: (pairs) =>
-          pairs.forEach(({ name, value, options }) => response.cookies.set(name, value, options)),
+        getAll: () => request.cookies.getAll(),
+        // Pattern chuẩn của @supabase/ssr: cập nhật cookie cho CẢ request lẫn response
+        // để server component trong cùng request đọc đúng phiên đã refresh.
+        setAll: (cookiesToSet) => {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          response = NextResponse.next({ request })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options),
+          )
+        },
       },
     },
   )
 
+  // Làm mới token + đồng bộ cookie
   const { data: { user } } = await supabase.auth.getUser()
   const path = request.nextUrl.pathname
 
-  // Redirect authenticated users away from auth pages
+  // Redirect authenticated users away from auth pages (giữ cookie đã refresh)
   if (user && AUTH_PATHS.some((p) => path === p)) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+    const redirect = NextResponse.redirect(new URL('/dashboard', request.url))
+    response.cookies.getAll().forEach((c) => redirect.cookies.set(c))
+    return redirect
   }
 
   // Protect all non-public routes
   if (!user && !PUBLIC_PATHS.some((p) => path === p || path.startsWith(p + '/'))) {
     const loginUrl = new URL('/login', request.url)
     loginUrl.searchParams.set('next', path)
-    return NextResponse.redirect(loginUrl)
+    const redirect = NextResponse.redirect(loginUrl)
+    response.cookies.getAll().forEach((c) => redirect.cookies.set(c))
+    return redirect
   }
 
   return response

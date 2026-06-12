@@ -85,9 +85,11 @@ export function RegisterForm() {
         return
       }
 
-      // If Supabase returned a session, email confirmation is disabled — go straight to onboarding
+      // If Supabase returned a session, email confirmation is disabled — go straight to onboarding.
+      // Dùng full reload (window.location) thay vì router.replace để server đọc đúng phiên mới
+      // và xoá Router Cache của phiên cũ (tránh hiện nhầm tài khoản cũ).
       if (data.session) {
-        router.replace('/onboarding/step-1')
+        window.location.assign('/onboarding/step-1')
         return
       }
 
