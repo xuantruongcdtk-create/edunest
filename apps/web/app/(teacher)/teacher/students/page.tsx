@@ -61,20 +61,34 @@ export default function TeacherStudentsPage() {
     setLoading(true)
     const sb = getBrowserClient()
 
-    // Fetch teacher → student links with child info
-    const { data: tsData } = await sb
-      .from('teacher_students')
-      .select('child_id, subject, children!inner(id, full_name, grade)')
+    // Lớp do giáo viên này chủ nhiệm
+    const { data: classData } = await (sb as any)
+      .from('classes')
+      .select('id, name')
       .eq('teacher_id', userId)
 
-    if (!tsData || tsData.length === 0) { setStudents([]); setLoading(false); return }
+    const classList = (classData ?? []) as { id: string; name: string }[]
+    if (classList.length === 0) { setStudents([]); setLoading(false); return }
 
-    // Deduplicate children; collect subjects per child
+    const classIds      = classList.map((c) => c.id)
+    const classNameById = Object.fromEntries(classList.map((c) => [c.id, c.name]))
+
+    // Học sinh đã tham gia các lớp đó (qua class_memberships)
+    const { data: cmData } = await (sb as any)
+      .from('class_memberships')
+      .select('class_id, children!inner(id, full_name, grade)')
+      .in('class_id', classIds)
+
+    if (!cmData || cmData.length === 0) { setStudents([]); setLoading(false); return }
+
+    // Gom theo học sinh; lưu tên LỚP vào trường subjects để hiển thị nhãn
     const childMap = new Map<string, { id: string; full_name: string; grade: number; subjects: string[] }>()
-    for (const row of tsData as { child_id: string; subject: string | null; children: { id: string; full_name: string; grade: number } }[]) {
+    for (const row of cmData as { class_id: string; children: { id: string; full_name: string; grade: number } | null }[]) {
       const c = row.children
-      if (!childMap.has(c.id)) childMap.set(c.id, { ...c, subjects: [] })
-      if (row.subject) childMap.get(c.id)!.subjects.push(row.subject)
+      if (!c) continue
+      if (!childMap.has(c.id)) childMap.set(c.id, { id: c.id, full_name: c.full_name, grade: c.grade, subjects: [] })
+      const className = classNameById[row.class_id]
+      if (className && !childMap.get(c.id)!.subjects.includes(className)) childMap.get(c.id)!.subjects.push(className)
     }
     const childIds = Array.from(childMap.keys())
 
@@ -174,7 +188,7 @@ export default function TeacherStudentsPage() {
           {allSubjects.length > 0 && (
             <select value={filterSubj} onChange={(e) => setFilterSubj(e.target.value)}
               className="border border-gray-200 rounded-input px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30">
-              <option value="all">Tất cả môn</option>
+              <option value="all">Tất cả lớp</option>
               {allSubjects.map((s) => <option key={s} value={s}>{SUBJ[s] ?? s}</option>)}
             </select>
           )}
@@ -199,7 +213,7 @@ export default function TeacherStudentsPage() {
             </p>
             <p className="text-sm text-gray-400 max-w-xs mx-auto">
               {students.length === 0
-                ? 'Học sinh được thêm vào danh sách khi phụ huynh liên kết với giáo viên.'
+                ? 'Học sinh xuất hiện khi phụ huynh nhập mã lớp của bạn để cho con vào lớp. Bạn cần là giáo viên chủ nhiệm của lớp.'
                 : 'Thử thay đổi bộ lọc.'}
             </p>
           </div>
@@ -210,7 +224,7 @@ export default function TeacherStudentsPage() {
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 border-b border-gray-100">
                   <tr>
-                    {['Học sinh', 'Lớp', 'Môn học', 'Điểm TB', 'Lần nhập', 'Trạng thái', ''].map((h) => (
+                    {['Học sinh', 'Khối', 'Lớp', 'Điểm TB', 'Lần nhập', 'Trạng thái', ''].map((h) => (
                       <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
@@ -226,11 +240,11 @@ export default function TeacherStudentsPage() {
                           <span className="font-medium text-gray-900">{s.full_name}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-gray-600">Lớp {s.grade}</td>
+                      <td className="px-4 py-3 text-gray-600">Khối {s.grade}</td>
                       <td className="px-4 py-3">
                         <div className="flex flex-wrap gap-1">
                           {s.subjects.length === 0
-                            ? <span className="text-xs text-gray-400">Tất cả</span>
+                            ? <span className="text-xs text-gray-400">—</span>
                             : s.subjects.map((subj) => (
                               <span key={subj} className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
                                 {SUBJ[subj] ?? subj}
@@ -272,7 +286,7 @@ export default function TeacherStudentsPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-gray-900 truncate">{s.full_name}</p>
-                    <p className="text-xs text-gray-400">Lớp {s.grade}</p>
+                    <p className="text-xs text-gray-400">Khối {s.grade}{s.subjects.length > 0 ? ` · ${s.subjects.join(', ')}` : ''}</p>
                   </div>
                   <span className={`text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${labelColor(s.avgScore)}`}>
                     {avgLabel(s.avgScore)}
