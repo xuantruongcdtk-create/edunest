@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { Reveal } from '../../../components/Reveal'
 
 const FEATURES_FREE = [
   '3 bộ quiz mỗi tháng',
@@ -108,7 +109,7 @@ export default function PricingPage() {
         </div>
 
         {/* Main plans */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Reveal><div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <PlanCard
             name="Miễn phí"
             tagline="Khởi đầu"
@@ -139,10 +140,10 @@ export default function PricingPage() {
             cta="Đăng ký gói Nâng cao"
             ctaHref="/register?plan=pro"
           />
-        </div>
+        </div></Reveal>
 
         {/* B2B teaser */}
-        <div className="bg-gradient-to-br from-[#185FA5] to-[#0e4a85] rounded-card p-8 text-white flex flex-col md:flex-row items-center justify-between gap-6">
+        <Reveal><div className="bg-gradient-to-br from-[#185FA5] to-[#0e4a85] rounded-card p-8 text-white flex flex-col md:flex-row items-center justify-between gap-6">
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-white/60 mb-2">Dành cho trường học</p>
             <h3 className="font-display font-extrabold text-2xl mb-2">Gói Trường học</h3>
@@ -158,10 +159,10 @@ export default function PricingPage() {
             </Link>
             <a href="mailto:contact@edunest.vn" className="text-xs text-white/60 hover:text-white">Hoặc liên hệ tư vấn</a>
           </div>
-        </div>
+        </div></Reveal>
 
         {/* FAQ / trust */}
-        <div>
+        <Reveal><div>
           <h2 className="font-display font-extrabold text-2xl text-gray-900 text-center mb-8">Câu hỏi thường gặp</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {[
@@ -188,10 +189,10 @@ export default function PricingPage() {
               </div>
             ))}
           </div>
-        </div>
+        </div></Reveal>
 
         {/* Final CTA */}
-        <div className="text-center py-4">
+        <Reveal><div className="text-center py-4">
           <h3 className="font-display font-extrabold text-2xl text-gray-900 mb-3">
             Sẵn sàng theo dõi con thông minh hơn?
           </h3>
@@ -200,7 +201,7 @@ export default function PricingPage() {
             className="inline-block bg-primary text-white font-bold text-base px-8 py-3 rounded-btn hover:bg-primary-dark transition-colors">
             Đăng ký miễn phí →
           </Link>
-        </div>
+        </div></Reveal>
       </div>
     </div>
   )

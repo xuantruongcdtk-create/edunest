@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { Reveal } from '../../components/Reveal'
 
 export const metadata: Metadata = {
   title: 'EduNest — Nền tảng học tập thông minh cho gia đình Việt',
@@ -571,13 +572,13 @@ export default function LandingPage() {
     <main className="font-body">
       <Navbar />
       <Hero />
-      <SocialProof />
-      <Features />
-      <HowItWorks />
-      <Pricing />
-      <Testimonials />
-      <CTA />
-      <Footer />
+      <Reveal><SocialProof /></Reveal>
+      <Reveal><Features /></Reveal>
+      <Reveal><HowItWorks /></Reveal>
+      <Reveal><Pricing /></Reveal>
+      <Reveal><Testimonials /></Reveal>
+      <Reveal><CTA /></Reveal>
+      <Reveal><Footer /></Reveal>
     </main>
   )
 }
