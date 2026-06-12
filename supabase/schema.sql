@@ -1268,3 +1268,149 @@ INSERT INTO public.feature_flags (key, enabled, description, rollout_pct) VALUES
   ('push_notifications', false, 'Expo push notifications',                   0),
   ('referral_rewards',   false, 'Referral reward credits',                   0)
 ON CONFLICT (key) DO NOTHING;
+
+
+-- #############################################################################
+-- ## CONSOLIDATED MIGRATIONS (gộp toàn bộ migrations/*.sql — T6/2026)         ##
+-- ## Idempotent: an toàn chạy lại; dùng cho cả DB mới lẫn DB đang chạy.       ##
+-- ## (Bỏ 20260611_bgh_test_account.sql — đó là DỮ LIỆU test, không phải schema)##
+-- #############################################################################
+
+-- ── 1. COLUMNS ───────────────────────────────────────────────────────────────
+ALTER TABLE public.profiles       ADD COLUMN IF NOT EXISTS onboarding_completed boolean NOT NULL DEFAULT false;
+ALTER TABLE public.children       ADD COLUMN IF NOT EXISTS school_name   text;
+ALTER TABLE public.classes        ADD COLUMN IF NOT EXISTS join_code     text UNIQUE;
+ALTER TABLE public.schools        ADD COLUMN IF NOT EXISTS join_code     text UNIQUE;
+ALTER TABLE public.quiz_questions ADD COLUMN IF NOT EXISTS question_type text NOT NULL DEFAULT 'mcq';   -- 'mcq' | 'essay'
+ALTER TABLE public.quiz_questions ADD COLUMN IF NOT EXISTS sample_answer text;                          -- đáp án mẫu cho tự luận
+ALTER TABLE public.quiz_questions ALTER COLUMN correct_index DROP NOT NULL;                             -- tự luận: correct_index = NULL
+ALTER TABLE public.quiz_attempts  ADD COLUMN IF NOT EXISTS details jsonb NOT NULL DEFAULT '[]';         -- chấm từng câu
+
+-- Sinh mã + đặt NOT NULL cho join_code (no-op trên DB mới/rỗng; backfill DB cũ)
+UPDATE public.classes SET join_code = upper(substring(replace(gen_random_uuid()::text,'-',''),1,8)) WHERE join_code IS NULL;
+UPDATE public.schools SET join_code = upper(translate(substring(replace(gen_random_uuid()::text,'-',''),1,6),'OIL01','PQRST')) WHERE join_code IS NULL;
+ALTER TABLE public.classes ALTER COLUMN join_code SET NOT NULL;
+ALTER TABLE public.schools ALTER COLUMN join_code SET NOT NULL;
+
+-- Backfill onboarding_completed (DB cũ): coi đã hoàn tất, trừ BGH/admin chưa gắn trường
+UPDATE public.profiles SET onboarding_completed = true
+WHERE onboarding_completed = false AND NOT (role IN ('bgh','admin') AND school_id IS NULL);
+
+-- ── 2. SECURITY DEFINER FUNCTIONS (tra cứu vượt RLS, tránh đệ quy) ───────────
+-- Phụ huynh có con được giao quiz này không (quiz_assignments → class_memberships → children)
+CREATE OR REPLACE FUNCTION public.parent_can_access_quiz(p_quiz_id uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.quiz_assignments qa
+    JOIN public.class_memberships cm ON cm.class_id = qa.class_id
+    JOIN public.children          c  ON c.id        = cm.child_id
+    WHERE qa.quiz_id = p_quiz_id AND c.parent_id = auth.uid()
+  )
+$$;
+
+-- Tra cứu lớp theo mã (phụ huynh chưa là thành viên vẫn tra được để tham gia)
+CREATE OR REPLACE FUNCTION public.find_class_by_join_code(p_code text)
+RETURNS TABLE (id uuid, name text, grade smallint, teacher_name text)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT c.id, c.name, c.grade, COALESCE(p.full_name, 'Giáo viên')
+  FROM   public.classes  c
+  LEFT JOIN public.profiles p ON p.id = c.teacher_id
+  WHERE  c.join_code = upper(trim(p_code))
+  LIMIT  1
+$$;
+GRANT EXECUTE ON FUNCTION public.find_class_by_join_code(text) TO authenticated;
+
+-- Phụ huynh có con là thành viên lớp này không (dùng cho RLS classes, tránh đệ quy)
+CREATE OR REPLACE FUNCTION public.is_parent_in_class(p_class_id uuid)
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.class_memberships cm
+    JOIN public.children c ON c.id = cm.child_id
+    WHERE cm.class_id = p_class_id AND c.parent_id = auth.uid()
+  )
+$$;
+
+-- Đồng bộ sĩ số lớp — SECURITY DEFINER để phụ huynh (không có quyền UPDATE classes)
+-- vẫn tăng được student_count khi cho con vào lớp
+CREATE OR REPLACE FUNCTION public.sync_class_student_count()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    UPDATE public.classes SET student_count = student_count + 1 WHERE id = NEW.class_id;
+  ELSIF TG_OP = 'DELETE' THEN
+    UPDATE public.classes SET student_count = GREATEST(0, student_count - 1) WHERE id = OLD.class_id;
+  END IF;
+  RETURN NULL;
+END;
+$$;
+DROP TRIGGER IF EXISTS trg_cm_sync_student_count ON public.class_memberships;
+CREATE TRIGGER trg_cm_sync_student_count
+  AFTER INSERT OR DELETE ON public.class_memberships
+  FOR EACH ROW EXECUTE FUNCTION public.sync_class_student_count();
+-- Backfill sĩ số đúng theo membership thực tế
+UPDATE public.classes c
+SET student_count = COALESCE((SELECT count(*) FROM public.class_memberships cm WHERE cm.class_id = c.id), 0);
+
+-- ── 3. POLICIES (DROP IF EXISTS + CREATE — idempotent) ──────────────────────
+
+-- quizzes: thay policy đọc rộng bằng policy theo assignment + BGH theo trường
+DROP POLICY IF EXISTS "quizzes: read published"      ON public.quizzes;
+DROP POLICY IF EXISTS "quizzes: parent via assignment" ON public.quizzes;
+CREATE POLICY "quizzes: parent via assignment"
+  ON public.quizzes FOR SELECT
+  USING (status = 'published' AND public.parent_can_access_quiz(id));
+DROP POLICY IF EXISTS "quizzes: bgh read school" ON public.quizzes;
+CREATE POLICY "quizzes: bgh read school"
+  ON public.quizzes FOR SELECT
+  USING (EXISTS (
+    SELECT 1 FROM public.profiles p JOIN public.profiles tp ON tp.id = quizzes.teacher_id
+    WHERE p.id = auth.uid() AND p.role = 'bgh' AND p.school_id IS NOT NULL AND p.school_id = tp.school_id
+  ));
+
+-- quiz_questions: tương tự
+DROP POLICY IF EXISTS "qq: read published quiz"     ON public.quiz_questions;
+DROP POLICY IF EXISTS "qq: parent via assignment"   ON public.quiz_questions;
+CREATE POLICY "qq: parent via assignment"
+  ON public.quiz_questions FOR SELECT
+  USING (EXISTS (SELECT 1 FROM public.quizzes WHERE id = quiz_id AND status = 'published')
+         AND public.parent_can_access_quiz(quiz_id));
+DROP POLICY IF EXISTS "qq: bgh read school" ON public.quiz_questions;
+CREATE POLICY "qq: bgh read school"
+  ON public.quiz_questions FOR SELECT
+  USING (EXISTS (
+    SELECT 1 FROM public.quizzes q JOIN public.profiles p ON p.id = auth.uid()
+    JOIN public.profiles tp ON tp.id = q.teacher_id
+    WHERE q.id = quiz_id AND p.role = 'bgh' AND p.school_id IS NOT NULL AND p.school_id = tp.school_id
+  ));
+
+-- quiz_assignments: phụ huynh đọc assignment của lớp có con
+DROP POLICY IF EXISTS "qassign: parent read" ON public.quiz_assignments;
+CREATE POLICY "qassign: parent read"
+  ON public.quiz_assignments FOR SELECT
+  USING (EXISTS (
+    SELECT 1 FROM public.class_memberships cm JOIN public.children c ON c.id = cm.child_id
+    WHERE cm.class_id = quiz_assignments.class_id AND c.parent_id = auth.uid()
+  ));
+
+-- class_memberships: phụ huynh tự cho con vào lớp (validate join_code ở tầng API)
+DROP POLICY IF EXISTS "cm: parent enroll own child" ON public.class_memberships;
+CREATE POLICY "cm: parent enroll own child"
+  ON public.class_memberships FOR INSERT
+  WITH CHECK (public.is_parent_of(child_id));
+
+-- schools: BGH/Admin tạo trường
+DROP POLICY IF EXISTS "schools: bgh/admin insert" ON public.schools;
+CREATE POLICY "schools: bgh/admin insert"
+  ON public.schools FOR INSERT
+  WITH CHECK (public.get_my_role() IN ('bgh', 'admin'));
+
+-- classes: BGH quản lý lớp trong trường (gán GV chủ nhiệm) + phụ huynh đọc lớp của con
+DROP POLICY IF EXISTS "classes: bgh manage school" ON public.classes;
+CREATE POLICY "classes: bgh manage school"
+  ON public.classes FOR ALL
+  USING      (school_id = public.get_my_school_id() AND public.get_my_role() IN ('bgh','admin'))
+  WITH CHECK (school_id = public.get_my_school_id() AND public.get_my_role() IN ('bgh','admin'));
+DROP POLICY IF EXISTS "classes: parent of member read" ON public.classes;
+CREATE POLICY "classes: parent of member read"
+  ON public.classes FOR SELECT
+  USING (public.is_parent_in_class(id));
