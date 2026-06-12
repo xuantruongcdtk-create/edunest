@@ -62,9 +62,10 @@ export function RegisterForm() {
 
     try {
       const supabase = getBrowserClient()
-      // Đảm bảo không còn phiên đăng nhập cũ — nếu không, khi bật xác nhận email,
+      // Xoá phiên cũ ở client (scope 'local' — không gọi endpoint logout server,
+      // tránh lỗi 400 khi không có phiên hợp lệ). Nếu không, khi bật xác nhận email
       // signUp không tạo phiên mới và người dùng sẽ kẹt ở tài khoản cũ.
-      await supabase.auth.signOut()
+      await supabase.auth.signOut({ scope: 'local' })
 
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
