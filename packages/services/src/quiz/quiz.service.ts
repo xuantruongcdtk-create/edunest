@@ -57,6 +57,7 @@ Trả về JSON hợp lệ, KHÔNG kèm giải thích ngoài JSON:
       status:             'draft',
       question_count:     total,
       time_limit_minutes: input.timeLimitMinutes,
+      ai_generated:       true,
     })
     .select()
     .single()
