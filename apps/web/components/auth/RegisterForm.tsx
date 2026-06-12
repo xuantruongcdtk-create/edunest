@@ -62,6 +62,10 @@ export function RegisterForm() {
 
     try {
       const supabase = getBrowserClient()
+      // Đảm bảo không còn phiên đăng nhập cũ — nếu không, khi bật xác nhận email,
+      // signUp không tạo phiên mới và người dùng sẽ kẹt ở tài khoản cũ.
+      await supabase.auth.signOut()
+
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
