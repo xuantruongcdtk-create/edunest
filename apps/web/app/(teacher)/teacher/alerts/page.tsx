@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { getBrowserClient }                  from '../../../../lib/supabase'
-import { useUser }                           from '../../../../lib/user-context'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface Alert {
@@ -41,7 +40,6 @@ const TABS: { key: TabKey; label: string }[] = [
 ]
 
 export default function TeacherAlertsPage() {
-  const { userId } = useUser()
 
   const [alerts,   setAlerts]   = useState<Alert[]>([])
   const [loading,  setLoading]  = useState(true)
@@ -51,11 +49,13 @@ export default function TeacherAlertsPage() {
   const loadAlerts = useCallback(async () => {
     setLoading(true)
     const sb = getBrowserClient()
+    const { data: { user } } = await sb.auth.getUser()
+    if (!user) { setAlerts([]); setLoading(false); return }
 
     const { data } = await sb
       .from('alerts')
       .select('id, type, severity, title, body, is_read, read_at, child_id, created_at, children(full_name, grade)')
-      .eq('user_id', userId)
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(50)
 
@@ -64,7 +64,7 @@ export default function TeacherAlertsPage() {
       child: Array.isArray(a.children) ? (a.children[0] ?? null) : (a.children ?? null),
     })) as Alert[])
     setLoading(false)
-  }, [userId])
+  }, [])
 
   useEffect(() => { loadAlerts() }, [loadAlerts])
 
@@ -83,7 +83,9 @@ export default function TeacherAlertsPage() {
     if (unreadIds.length === 0) return
 
     const sb = getBrowserClient()
-    await sb.from('alerts').update({ is_read: true, read_at: new Date().toISOString() }).eq('user_id', userId).eq('is_read', false)
+    const { data: { user } } = await sb.auth.getUser()
+    if (!user) return
+    await sb.from('alerts').update({ is_read: true, read_at: new Date().toISOString() }).eq('user_id', user.id).eq('is_read', false)
     setAlerts((prev) => prev.map((a) => ({ ...a, is_read: true })))
   }
 

@@ -3,7 +3,6 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams }               from 'next/navigation'
 import { getBrowserClient }              from '../../../../lib/supabase'
-import { useUser }                       from '../../../../lib/user-context'
 
 interface ScoreRecord {
   id:           string
@@ -76,7 +75,6 @@ function toDisplay(iso: string): string {
 }
 
 function ScoresPageInner() {
-  const { userId }   = useUser()
   const searchParams = useSearchParams()
   const urlChildId   = searchParams.get('childId') ?? undefined
 
@@ -100,11 +98,13 @@ function ScoresPageInner() {
   useEffect(() => {
     async function load() {
       const sb = getBrowserClient()
+      const { data: { user } } = await sb.auth.getUser()
+      if (!user) return
 
       const { data: kids } = await sb
         .from('children')
         .select('id, full_name, grade')
-        .eq('parent_id', userId)
+        .eq('parent_id', user.id)
         .order('created_at')
 
       const childList = (kids ?? []) as Child[]
@@ -114,7 +114,7 @@ function ScoresPageInner() {
       setActiveId(cid)
     }
     load()
-  }, [userId, urlChildId])
+  }, [urlChildId])
 
   useEffect(() => {
     if (!activeId) return
@@ -166,9 +166,11 @@ function ScoresPageInner() {
 
     setSaving(true); setError(null)
     const sb = getBrowserClient()
+    const { data: { user } } = await sb.auth.getUser()
+    if (!user) { setError('Phiên đăng nhập hết hạn.'); setSaving(false); return }
     const { error: insErr } = await sb.from('score_records').insert({
       child_id:      activeId,
-      created_by:    userId,
+      created_by:    user.id,
       subject,
       score:         s,
       max_score:     m,

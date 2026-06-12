@@ -1,9 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter }           from 'next/navigation'
 import { getBrowserClient }    from '../../lib/supabase'
-import { useUser }             from '../../lib/user-context'
 
 const PLAN_LABELS: Record<string, { label: string; color: string }> = {
   free:   { label: 'Miễn phí',  color: 'bg-gray-100 text-gray-600' },
@@ -13,8 +11,6 @@ const PLAN_LABELS: Record<string, { label: string; color: string }> = {
 }
 
 export default function SettingsPage() {
-  const router     = useRouter()
-  const { userId } = useUser()
 
   const [profile,   setProfile]   = useState<{ full_name: string; email: string; phone: string; role: string; plan_tier: string } | null>(null)
   const [fullName,  setFullName]  = useState('')
@@ -27,11 +23,13 @@ export default function SettingsPage() {
   useEffect(() => {
     async function load() {
       const sb = getBrowserClient()
+      const { data: { user } } = await sb.auth.getUser()
+      if (!user) return
 
       const { data } = await sb
         .from('profiles')
         .select('full_name, role, plan_tier, phone, email')
-        .eq('id', userId)
+        .eq('id', user.id)
         .single()
 
       const p = data as { full_name: string; role: string; plan_tier: string; phone: string | null; email: string | null } | null
@@ -40,18 +38,20 @@ export default function SettingsPage() {
       setPhone(p?.phone ?? '')
     }
     load()
-  }, [userId])
+  }, [])
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
     setError(null); setSaving(true); setSaved(false)
 
     const sb = getBrowserClient()
+    const { data: { user } } = await sb.auth.getUser()
+    if (!user) { setError('Phiên đăng nhập hết hạn.'); setSaving(false); return }
 
     const { error: uErr } = await sb
       .from('profiles')
       .update({ full_name: fullName.trim(), phone: phone.trim() || null })
-      .eq('id', userId)
+      .eq('id', user.id)
 
     setSaving(false)
     if (uErr) { setError('Không thể lưu. Thử lại nhé.'); return }
@@ -62,8 +62,8 @@ export default function SettingsPage() {
   async function handleLogout() {
     setLoggingOut(true)
     const sb = getBrowserClient()
-    await sb.auth.signOut()
-    router.push('/')
+    await sb.auth.signOut({ scope: 'local' })
+    window.location.assign('/login')
   }
 
   const planInfo = PLAN_LABELS[profile?.plan_tier ?? 'free'] ?? PLAN_LABELS.free!

@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link                                  from 'next/link'
 import { getBrowserClient }                  from '../../../../lib/supabase'
-import { useUser }                           from '../../../../lib/user-context'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface Student {
@@ -49,7 +48,6 @@ function labelColor(n: number | null) {
 }
 
 export default function TeacherStudentsPage() {
-  const { userId } = useUser()
 
   const [students,  setStudents]  = useState<Student[]>([])
   const [loading,   setLoading]   = useState(true)
@@ -60,12 +58,14 @@ export default function TeacherStudentsPage() {
   const loadStudents = useCallback(async () => {
     setLoading(true)
     const sb = getBrowserClient()
+    const { data: { user } } = await sb.auth.getUser()
+    if (!user) { setStudents([]); setLoading(false); return }
 
     // Lớp do giáo viên này chủ nhiệm
     const { data: classData } = await (sb as any)
       .from('classes')
       .select('id, name')
-      .eq('teacher_id', userId)
+      .eq('teacher_id', user.id)
 
     const classList = (classData ?? []) as { id: string; name: string }[]
     if (classList.length === 0) { setStudents([]); setLoading(false); return }
@@ -118,7 +118,7 @@ export default function TeacherStudentsPage() {
     result.sort((a, b) => (b.avgScore ?? -1) - (a.avgScore ?? -1))
     setStudents(result)
     setLoading(false)
-  }, [userId])
+  }, [])
 
   useEffect(() => { loadStudents() }, [loadStudents])
 

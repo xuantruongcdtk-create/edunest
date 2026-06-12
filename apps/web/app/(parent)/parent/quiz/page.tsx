@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { getBrowserClient } from '../../../../lib/supabase'
-import { useUser } from '../../../../lib/user-context'
 import Link from 'next/link'
 
 interface Child {
@@ -47,7 +46,6 @@ const DIFF_CONFIG = {
 const ALL_SUBJECTS = ['math','literature','english','physics','chemistry','biology','history','geography','civics','informatics']
 
 export default function ParentQuizPage() {
-  const { userId } = useUser()
   const [quizzes,  setQuizzes]  = useState<Quiz[]>([])
   const [children, setChildren] = useState<Child[]>([])
   const [attempts, setAttempts] = useState<Attempt[]>([])
@@ -57,6 +55,8 @@ export default function ParentQuizPage() {
   useEffect(() => {
     async function load() {
       const sb = getBrowserClient()
+      const { data: { user } } = await sb.auth.getUser()
+      if (!user) { setLoading(false); return }
 
       // Fetch qua quiz_assignments để lấy tên lớp + due_date theo assignment.
       // RLS tự lọc: chỉ trả về assignment của lớp có con phụ huynh này.
@@ -73,7 +73,7 @@ export default function ParentQuizPage() {
           .order('created_at', { ascending: false }),
         sb.from('children')
           .select('id, full_name, grade')
-          .eq('parent_id', userId),
+          .eq('parent_id', user.id),
       ])
 
       const kids = (childData ?? []) as Child[]
@@ -107,8 +107,8 @@ export default function ParentQuizPage() {
 
       setLoading(false)
     }
-    if (userId) load()
-  }, [userId])
+    load()
+  }, [])
 
   const filtered = filter === 'all' ? quizzes : quizzes.filter((q) => q.subject === filter)
 
