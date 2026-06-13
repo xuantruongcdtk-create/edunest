@@ -15,6 +15,7 @@ const PARENT_NAV: NavItem[]  = [
   { href: '/parent/coach',       label: 'EduCoach AI',  icon: '🤖' },
   { href: '/parent/children',    label: 'Hồ sơ con',    icon: '👦' },
   { href: '/parent/reports',     label: 'Báo cáo',      icon: '📄' },
+  { href: '/parent/guide',       label: 'Hướng dẫn',    icon: '📖' },
   { href: '/settings',           label: 'Cài đặt',      icon: '⚙' },
 ]
 const TEACHER_NAV: NavItem[] = [
@@ -24,12 +25,14 @@ const TEACHER_NAV: NavItem[] = [
   { href: '/teacher/students',    label: 'Học sinh',     icon: '👥' },
   { href: '/teacher/quiz',        label: 'Bài kiểm tra', icon: '📝' },
   { href: '/teacher/alerts',      label: 'Cảnh báo',     icon: '🔔' },
+  { href: '/teacher/guide',       label: 'Hướng dẫn',    icon: '📖' },
   { href: '/settings',            label: 'Cài đặt',      icon: '⚙' },
 ]
 const BGH_NAV: NavItem[] = [
   { href: '/bgh/dashboard',     label: 'Tổng quan',    icon: '⊞' },
   { href: '/bgh/classes',       label: 'Lớp học',      icon: '🏫' },
   { href: '/bgh/reports',       label: 'Báo cáo',      icon: '📄' },
+  { href: '/bgh/guide',         label: 'Hướng dẫn',    icon: '📖' },
   { href: '/settings',          label: 'Cài đặt',      icon: '⚙' },
 ]
 const ADMIN_NAV: NavItem[] = [
