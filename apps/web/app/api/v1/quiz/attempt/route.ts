@@ -1,6 +1,6 @@
-import { getServerClient } from '@edunest/db'
+import { getAuthUser } from '@edunest/db'
 import { submitAttempt } from '@edunest/services'
-import { ok, apiError, withHandler, UnauthorizedError, ValidationError } from '@edunest/core'
+import { ok, withHandler, UnauthorizedError, ValidationError } from '@edunest/core'
 import { z } from 'zod'
 
 const AttemptSchema = z.object({
@@ -12,8 +12,7 @@ const AttemptSchema = z.object({
 })
 
 export const POST = withHandler(async (req) => {
-  const db = await getServerClient()
-  const { data: { user } } = await db.auth.getUser()
+  const user = await getAuthUser()
   if (!user) throw new UnauthorizedError()
 
   const body = await req.json()

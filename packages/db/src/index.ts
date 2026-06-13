@@ -1,5 +1,5 @@
 export { getBrowserClient }         from './clients/browser.client'
-export { getServerClient }          from './clients/server.client'
+export { getServerClient, getAuthUser } from './clients/server.client'
 export { adminClient }              from './clients/admin.client'
 export { assertNoError, paginationRange, buildMeta } from './queries/helpers'
 export type { Database }            from './types'

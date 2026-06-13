@@ -1,4 +1,4 @@
-import { getServerClient } from '@edunest/db'
+import { getAuthUser } from '@edunest/db'
 import { getOrCreateConversation, streamCoachReply } from '@edunest/services'
 import { UnauthorizedError, ValidationError } from '@edunest/core'
 import { z } from 'zod'
@@ -7,6 +7,8 @@ const MessageSchema = z.object({
   message:        z.string().min(1).max(2000),
   conversationId: z.string().uuid().optional(),
   childId:        z.string().uuid().optional(),
+  // Mobile sets stream:false to get a single JSON reply (RN fetch can't read SSE).
+  stream:         z.boolean().optional(),
 })
 
 export async function POST(req: Request) {
@@ -19,8 +21,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const db = await getServerClient()
-    const { data: { user } } = await db.auth.getUser()
+    const user = await getAuthUser()
     if (!user) throw new UnauthorizedError()
 
     const body   = await req.json()
@@ -30,6 +31,20 @@ export async function POST(req: Request) {
     const conv = parsed.data.conversationId
       ? { id: parsed.data.conversationId }
       : await getOrCreateConversation(user.id, parsed.data.childId)
+
+    // Non-streaming JSON reply (mobile): collect the whole reply, return the API envelope.
+    if (parsed.data.stream === false) {
+      try {
+        let reply = ''
+        for await (const chunk of streamCoachReply(user.id, conv.id, parsed.data.message)) {
+          reply += chunk
+        }
+        return Response.json({ ok: true, data: { conversationId: conv.id, reply } })
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err)
+        return Response.json({ ok: false, error: { code: 'COACH_ERROR', message } }, { status: 400 })
+      }
+    }
 
     // Stream SSE back to the client
     const encoder = new TextEncoder()

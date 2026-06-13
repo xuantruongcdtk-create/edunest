@@ -17,21 +17,23 @@ function useAuthGate() {
 
   useEffect(() => {
     if (loading) return
-    const inAuth = segments[0] === '(auth)'
-    const inApp = segments[0] === '(parent)' || segments[0] === '(teacher)'
+    const seg0 = segments[0]
+    const inAuth = seg0 === '(auth)'
+    const atRoot = seg0 === undefined // the index route
 
     if (!user) {
       if (!inAuth) router.replace('/(auth)/login')
       return
     }
-    // Logged in: keep parent in parent tabs, teacher in teacher tabs.
-    if (!inApp) {
+    // Logged in: send away from the login/index landing; keep each role in its own tabs.
+    if (inAuth || atRoot) {
       router.replace(homeFor(role))
-    } else if (segments[0] === '(parent)' && role === 'teacher') {
+    } else if (seg0 === '(parent)' && role === 'teacher') {
       router.replace('/(teacher)/dashboard')
-    } else if (segments[0] === '(teacher)' && role === 'parent') {
+    } else if (seg0 === '(teacher)' && role === 'parent') {
       router.replace('/(parent)/dashboard')
     }
+    // Other routes (e.g. quiz/[id]) are left alone for logged-in users.
   }, [user, role, loading, segments, router])
 }
 
@@ -53,6 +55,7 @@ export default function RootLayout() {
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(parent)" />
           <Stack.Screen name="(teacher)" />
+          <Stack.Screen name="quiz/[id]" options={{ presentation: 'modal' }} />
         </Stack>
       )}
     </SafeAreaProvider>

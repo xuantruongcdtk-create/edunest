@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { View, Text, StyleSheet, RefreshControl, Alert, Pressable } from 'react-native'
+import { useRouter } from 'expo-router'
 import { useAuthStore } from '../../stores/auth.store'
 import { useChildrenStore } from '../../stores/children.store'
 import { supabase } from '../../lib/supabase'
@@ -18,6 +19,7 @@ interface AssignedQuiz {
 }
 
 export default function ParentQuiz() {
+  const router = useRouter()
   const userId = useAuthStore((s) => s.user?.id)
   const { activeId, loaded, load } = useChildrenStore()
   const [items, setItems] = useState<AssignedQuiz[]>([])
@@ -84,9 +86,9 @@ export default function ParentQuiz() {
           items.map((q) => (
             <Pressable
               key={q.id}
-              onPress={() => Alert.alert(q.title, q.done
-                ? 'Con đã hoàn thành bài này. Xem điểm ở tab Bảng điểm.'
-                : 'Làm bài kiểm tra sẽ sớm có trên app. Hiện tại con có thể làm bài trên bản web.')}
+              onPress={() => q.done
+                ? Alert.alert(q.title, 'Con đã hoàn thành bài này. Xem điểm ở tab Bảng điểm.')
+                : router.push(`/quiz/${q.id}`)}
             >
               <Card style={styles.row}>
                 <View style={{ flex: 1 }}>

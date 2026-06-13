@@ -23,7 +23,11 @@ export default function ParentTabsLayout() {
       />
       <Tabs.Screen
         name="quiz"
-        options={{ title: 'Bài kiểm tra', tabBarIcon: ({ color, size }) => <Ionicons name="document-text-outline" size={size} color={color} /> }}
+        options={{ title: 'Bài KT', tabBarIcon: ({ color, size }) => <Ionicons name="document-text-outline" size={size} color={color} /> }}
+      />
+      <Tabs.Screen
+        name="coach"
+        options={{ title: 'EduCoach', tabBarIcon: ({ color, size }) => <Ionicons name="chatbubbles-outline" size={size} color={color} /> }}
       />
       <Tabs.Screen
         name="more"
