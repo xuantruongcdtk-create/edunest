@@ -1,55 +1,67 @@
 import { create } from 'zustand'
-import { createClient } from '@supabase/supabase-js'
-import * as SecureStore from 'expo-secure-store'
-import Constants from 'expo-constants'
+import type { UserRole } from '@edunest/types'
+import { supabase } from '../lib/supabase'
 
-const supabase = createClient(
-  Constants.expoConfig?.extra?.supabaseUrl  ?? '',
-  Constants.expoConfig?.extra?.supabaseAnon ?? '',
-  {
-    auth: {
-      storage: {
-        async getItem(key)        { return SecureStore.getItemAsync(key) },
-        async setItem(key, value) { await SecureStore.setItemAsync(key, value) },
-        async removeItem(key)     { await SecureStore.deleteItemAsync(key) },
-      },
-      autoRefreshToken:  true,
-      persistSession:    true,
-      detectSessionInUrl: false,
-    },
-  },
-)
-
-interface User { id: string; email?: string }
-
-interface AuthState {
-  user:    User | null
-  loading: boolean
-  signIn:  (email: string, password: string) => Promise<void>
-  signOut: () => Promise<void>
-  init:    () => Promise<void>
+interface AuthUser {
+  id: string
+  email?: string
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
-  user:    null,
+interface AuthState {
+  user: AuthUser | null
+  role: UserRole | null
+  fullName: string | null
+  loading: boolean
+  init: () => Promise<void>
+  loadProfile: (userId: string) => Promise<void>
+  signIn: (email: string, password: string) => Promise<UserRole | null>
+  signOut: () => Promise<void>
+}
+
+export const useAuthStore = create<AuthState>((set, get) => ({
+  user: null,
+  role: null,
+  fullName: null,
   loading: true,
 
   async init() {
     const { data: { session } } = await supabase.auth.getSession()
-    set({ user: session?.user ?? null, loading: false })
+    const u = session?.user ?? null
+    set({ user: u ? { id: u.id, email: u.email } : null })
+    if (u) await get().loadProfile(u.id)
+    set({ loading: false })
 
-    supabase.auth.onAuthStateChange((_event, session) => {
-      set({ user: session?.user ?? null })
+    supabase.auth.onAuthStateChange((_event, s) => {
+      const nu = s?.user ?? null
+      if (nu) {
+        set({ user: { id: nu.id, email: nu.email } })
+        void get().loadProfile(nu.id)
+      } else {
+        set({ user: null, role: null, fullName: null })
+      }
     })
   },
 
+  async loadProfile(userId) {
+    const { data } = await supabase
+      .from('profiles')
+      .select('role, full_name')
+      .eq('id', userId)
+      .single()
+    if (data) set({ role: data.role as UserRole, fullName: data.full_name as string })
+  },
+
   async signIn(email, password) {
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw error
+    const uid = data.user?.id
+    if (!uid) return null
+    await get().loadProfile(uid)
+    return get().role
   },
 
   async signOut() {
     await supabase.auth.signOut()
-    set({ user: null })
+    set({ user: null, role: null, fullName: null })
   },
 }))

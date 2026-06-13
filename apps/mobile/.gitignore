@@ -1,0 +1,23 @@
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Env (anon key is public but keep local env out of git)
+.env
+
+# Metro
+.metro-health-check*
+
+# misc
+npm-debug.*
+node_modules/

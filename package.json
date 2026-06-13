@@ -17,6 +17,9 @@
     "node": ">=18"
   },
   "packageManager": "npm@11.12.1",
+  "overrides": {
+    "@types/react": "19.2.2"
+  },
   "workspaces": [
     "apps/*",
     "packages/*"
