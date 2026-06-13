@@ -1,4 +1,4 @@
-import { getServerClient }                         from '@edunest/db'
+import { getServerClient, getAuthUser }            from '@edunest/db'
 import { ok, withHandler, UnauthorizedError, ValidationError } from '@edunest/core'
 import { z } from 'zod'
 
@@ -9,7 +9,7 @@ const JoinSchema = z.object({
 
 export const POST = withHandler(async (req) => {
   const db = await getServerClient()
-  const { data: { user } } = await db.auth.getUser()
+  const user = await getAuthUser()
   if (!user) throw new UnauthorizedError()
 
   const body = await req.json()

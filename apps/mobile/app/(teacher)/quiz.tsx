@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { View, Text, StyleSheet, RefreshControl, Pressable, Alert, Linking } from 'react-native'
+import { View, Text, StyleSheet, RefreshControl, Pressable, Linking } from 'react-native'
+import { useRouter } from 'expo-router'
 import { useAuthStore } from '../../stores/auth.store'
 import { supabase } from '../../lib/supabase'
 import { subjectLabel } from '../../lib/format'
@@ -16,6 +17,7 @@ const STATUS_VI: Record<string, { label: string; color: string }> = {
 const WEB = process.env.EXPO_PUBLIC_API_URL ?? ''
 
 export default function TeacherQuiz() {
+  const router = useRouter()
   const userId = useAuthStore((s) => s.user?.id)
   const [items, setItems] = useState<QuizRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -53,11 +55,11 @@ export default function TeacherQuiz() {
           items.map((q) => {
             const st = STATUS_VI[q.status] ?? { label: q.status, color: colors.textFaint }
             return (
-              <Pressable key={q.id} onPress={() => Alert.alert(q.title, 'Giao bài, xem bài nộp và chấm điểm trên bản web. Tính năng đầy đủ sẽ sớm có trên app.')}>
+              <Pressable key={q.id} onPress={() => router.push(`/submissions/${q.id}`)}>
                 <Card style={styles.row}>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.title} numberOfLines={2}>{q.title}</Text>
-                    <Text style={styles.meta}>{subjectLabel(q.subject)} · {q.question_count} câu</Text>
+                    <Text style={styles.meta}>{subjectLabel(q.subject)} · {q.question_count} câu · Xem bài nộp ›</Text>
                   </View>
                   <Pill text={st.label} color={st.color} />
                 </Card>

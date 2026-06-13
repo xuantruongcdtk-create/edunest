@@ -6,7 +6,7 @@ import { useChildrenStore } from '../../stores/children.store'
 import { supabase } from '../../lib/supabase'
 import { subjectLabel } from '../../lib/format'
 import { colors, spacing } from '../../lib/theme'
-import { Header, Body, Card, EmptyState, Loading, Pill } from '../../components/ui'
+import { Header, Body, Card, EmptyState, Loading, Pill, AppButton } from '../../components/ui'
 import { ChildSwitcher } from '../../components/ChildSwitcher'
 
 interface AssignedQuiz {
@@ -81,7 +81,12 @@ export default function ParentQuiz() {
         {loading ? (
           <Loading />
         ) : items.length === 0 ? (
-          <EmptyState icon="📝" title="Chưa có bài nào" hint="Khi con tham gia lớp và giáo viên giao bài, bài sẽ hiện ở đây." />
+          <Card style={{ alignItems: 'center', gap: spacing.md, paddingVertical: spacing.xl }}>
+            <EmptyState icon="📝" title="Chưa có bài nào" hint="Cho con tham gia lớp bằng mã giáo viên để nhận bài kiểm tra." />
+            <View style={{ alignSelf: 'stretch' }}>
+              <AppButton title="Tham gia lớp" onPress={() => router.push('/join-class')} />
+            </View>
+          </Card>
         ) : (
           items.map((q) => (
             <Pressable

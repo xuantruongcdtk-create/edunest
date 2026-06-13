@@ -1,18 +1,20 @@
 import { useCallback, useEffect, useState } from 'react'
 import { View, Text, StyleSheet, RefreshControl } from 'react-native'
+import { useRouter } from 'expo-router'
 import { useAuthStore } from '../../stores/auth.store'
 import { useChildrenStore } from '../../stores/children.store'
 import { supabase } from '../../lib/supabase'
 import { toTen } from '../../lib/format'
 import { colors, spacing } from '../../lib/theme'
 import {
-  Header, Body, Card, StatCard, SectionTitle, EmptyState, Loading,
+  Header, Body, Card, StatCard, SectionTitle, EmptyState, Loading, AppButton,
 } from '../../components/ui'
 import { ChildSwitcher } from '../../components/ChildSwitcher'
 
 interface Stats { avgScore: number | null; avgQuiz: number | null; unread: number }
 
 export default function ParentDashboard() {
+  const router = useRouter()
   const userId = useAuthStore((s) => s.user?.id)
   const fullName = useAuthStore((s) => s.fullName)
   const { children, activeId, loaded, load } = useChildrenStore()
@@ -54,7 +56,12 @@ export default function ParentDashboard() {
       <Header title={`Xin chào${fullName ? ', ' + fullName : ''} 👋`} subtitle="Tổng quan việc học của con" />
       <Body refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}>
         {children.length === 0 ? (
-          <EmptyState icon="👦" title="Chưa có hồ sơ con" hint="Vào mục Thêm → Hồ sơ con để thêm con và bắt đầu theo dõi." />
+          <Card style={{ alignItems: 'center', gap: spacing.md, paddingVertical: spacing.xl }}>
+            <EmptyState icon="👦" title="Chưa có hồ sơ con" hint="Thêm con để bắt đầu theo dõi việc học." />
+            <View style={{ alignSelf: 'stretch' }}>
+              <AppButton title="Thêm con" onPress={() => router.push('/add-child')} />
+            </View>
+          </Card>
         ) : (
           <>
             <ChildSwitcher />

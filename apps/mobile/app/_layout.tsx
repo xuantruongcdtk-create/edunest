@@ -56,6 +56,9 @@ export default function RootLayout() {
           <Stack.Screen name="(parent)" />
           <Stack.Screen name="(teacher)" />
           <Stack.Screen name="quiz/[id]" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="submissions/[id]" />
+          <Stack.Screen name="add-child" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="join-class" options={{ presentation: 'modal' }} />
         </Stack>
       )}
     </SafeAreaProvider>

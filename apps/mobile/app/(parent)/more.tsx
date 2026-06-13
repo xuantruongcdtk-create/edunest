@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { View, Text, StyleSheet, Pressable, Linking, Alert } from 'react-native'
+import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { useAuthStore } from '../../stores/auth.store'
 import { useChildrenStore } from '../../stores/children.store'
@@ -19,6 +20,7 @@ function LinkRow({ icon, label, onPress }: { icon: any; label: string; onPress: 
 }
 
 export default function ParentMore() {
+  const router = useRouter()
   const { user, fullName, signOut } = useAuthStore()
   const { children, load } = useChildrenStore()
 
@@ -57,12 +59,11 @@ export default function ParentMore() {
           )}
         </Card>
 
-        <SectionTitle>Quản lý trên web</SectionTitle>
+        <SectionTitle>Quản lý</SectionTitle>
         <Card style={{ padding: 0 }}>
-          <LinkRow icon="people-outline" label="Hồ sơ con" onPress={() => Linking.openURL(WEB + '/parent/children')} />
-          <LinkRow icon="school-outline" label="Tham gia lớp" onPress={() => Linking.openURL(WEB + '/parent/join-class')} />
-          <LinkRow icon="chatbubbles-outline" label="EduCoach AI" onPress={() => Linking.openURL(WEB + '/parent/coach')} />
-          <LinkRow icon="card-outline" label="Gói & thanh toán" onPress={() => Linking.openURL(WEB + '/settings/billing')} />
+          <LinkRow icon="person-add-outline" label="Thêm con" onPress={() => router.push('/add-child')} />
+          <LinkRow icon="school-outline" label="Tham gia lớp" onPress={() => router.push('/join-class')} />
+          <LinkRow icon="card-outline" label="Gói & thanh toán (web)" onPress={() => Linking.openURL(WEB + '/settings/billing')} />
         </Card>
 
         <View style={{ height: spacing.md }} />
